@@ -32,19 +32,19 @@ class AddSecurityVotersPass implements CompilerPassInterface
             return;
         }
 
-        $voters = array();
+        $voters = new \SplPriorityQueue();
         foreach ($container->findTaggedServiceIds('security.voter') as $id => $attributes) {
             $priority = isset($attributes[0]['priority']) ? $attributes[0]['priority'] : 0;
-            $voters[$priority][] = new Reference($id);
+            $voters->insert(new Reference($id), $priority);
         }
 
-        krsort($voters);
-        $voters = call_user_func_array('array_merge', $voters);
+        $voters = iterator_to_array($voters);
+        ksort($voters);
 
         if (!$voters) {
             throw new LogicException('No security voters found. You need to tag at least one with "security.voter"');
         }
 
-        $container->getDefinition('security.access.decision_manager')->addMethodCall('setVoters', array($voters));
+        $container->getDefinition('security.access.decision_manager')->addMethodCall('setVoters', array(array_values($voters)));
     }
 }

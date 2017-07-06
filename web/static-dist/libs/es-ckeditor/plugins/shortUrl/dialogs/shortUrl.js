@@ -21,11 +21,11 @@ CKEDITOR.dialog.add('shortUrl', function(editor) {
         shortUrlModal.on('click','.js-transfer-link',function(){
             var postData = $messageUrl.val();
             if (postData　===　'') {
-                showError(editor.lang.shortUrl.empty_error);
+                showError('网址不能为空');
                 return ;
             };
             if (shortUrlLength && $(editor.getData()).find('.js-short-url').length >= shortUrlLength) {
-                showError(editor.lang.shortUrl.max_error);
+                showError('当前只能添加'+shortUrlLength+'条短网址');
                 isShortUrl = false;
                 return;
             };
@@ -56,15 +56,15 @@ CKEDITOR.dialog.add('shortUrl', function(editor) {
     };
 
     var dialogDefinition = {
-        title: editor.lang.shortUrl.title,
+        title: '短网址转换',
         minWidth: 500,
         minHeight: 200,
         resizable: CKEDITOR.DIALOG_RESIZE_BOTH,
         buttons: [CKEDITOR.dialog.okButton],
         contents: [{
             id: 'shortUrl',
-            label: editor.lang.shortUrl.title,
-            title: editor.lang.shortUrl.title,
+            label: '短网址转换',
+            title: '短网址转换',
             expand: true,
             elements: [{
                 id: "body",
@@ -74,7 +74,8 @@ CKEDITOR.dialog.add('shortUrl', function(editor) {
         }],
         
         onLoad: function() {
-            $('.' + editor.id + ' #shorturl-body-ckeditor').load(CKEDITOR.getUrl('plugins/shortUrl/html/index_'+editor.config.language+'.html'), onLoadDialog);
+            $('.' + editor.id + ' #shorturl-body-ckeditor').load(CKEDITOR.getUrl('plugins/shortUrl/html/index.html'), onLoadDialog);
+            //$('#shorturl-body-ckeditor').closest('.cke_dialog_contents_body').parent().next().hide();
         },
 
         onOk: function() {

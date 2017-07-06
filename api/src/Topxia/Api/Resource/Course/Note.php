@@ -3,11 +3,9 @@
 namespace Topxia\Api\Resource\Course;
 
 use Silex\Application;
-use Biz\Task\Service\TaskService;
-use Biz\Course\Service\CourseService;
 use Topxia\Api\Resource\BaseResource;
-use Biz\Course\Service\CourseNoteService;
 use Symfony\Component\HttpFoundation\Request;
+use Topxia\Common\ArrayToolkit;
 
 class Note extends BaseResource
 {
@@ -24,17 +22,17 @@ class Note extends BaseResource
 
     public function post(Application $app, Request $request)
     {
-        $requiredFields = array('taskId', 'content');
+        $requiredFields = array('lessonId', 'content');
         $fields = $this->checkRequiredFields($requiredFields, $request->request->all());
 
-        $task = $this->getTaskService()->getTask($fields['taskId']);
-        if (empty($task)) {
-            return $this->error('403', "ID为{$fields['taskId']}的任务不存在");
+        $lesson = $this->getCourseService()->getLesson($fields['lessonId']);
+        if (empty($lesson)) {
+            throw new \Exception("ID为{$lessonId}的课时不存在");
         }
 
         $note = array(
-            'courseId' => $task['courseId'],
-            'taskId' => $task['id'],
+            'courseId' => $lesson['courseId'],
+            'lessonId' => $fields['lessonId'],
             'status' => !empty($fields['status']) ? 1 : 0,
             'content' => $fields['content'],
         );
@@ -49,27 +47,13 @@ class Note extends BaseResource
         return $res;
     }
 
-    /**
-     * @return CourseNoteService
-     */
     protected function getCourseNoteService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseNoteService');
+        return $this->getServiceKernel()->createService('Course.NoteService');
     }
 
-    /**
-     * @return CourseService
-     */
     protected function getCourseService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseService');
-    }
-
-    /**
-     * @return TaskService
-     */
-    protected function getTaskService()
-    {
-        return $this->getServiceKernel()->createService('Task:TaskService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 }

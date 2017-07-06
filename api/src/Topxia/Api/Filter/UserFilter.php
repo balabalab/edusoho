@@ -10,8 +10,8 @@ class UserFilter implements Filter
     //查看权限,附带内容可以写在这里
     public function filter(array &$data)
     {
-        $fileService = ServiceKernel::instance()->createService('Content:FileService');
-        $userService = ServiceKernel::instance()->createService('User:UserService');
+        $fileService = ServiceKernel::instance()->createService('Content.FileService');
+        $userService = ServiceKernel::instance()->createService('User.UserService');
         
         unset($data['password']);
         unset($data['salt']);
@@ -31,7 +31,7 @@ class UserFilter implements Filter
                 $userVipLevel = $this->getVipLevelService()->getLevel($userVip['levelId']);
 
                 $data['vip']['vipName']     = $userVipLevel['name'];
-                $data['vip']['VipDeadLine'] = $userVip['deadline'];
+                $data['vip']['vipDeadLine'] = $userVip['deadline'];
                 $data['vip']['levelId']     = $userVip['levelId'];
             }
         }
@@ -42,7 +42,7 @@ class UserFilter implements Filter
         $data['approvalTime'] = date('c', $data['approvalTime']);
         $data['createdTime'] = date('c', $data['createdTime']);
         
-        $host = ServiceKernel::instance()->getEnvVariable('schemeAndHost');
+        $host = ServiceKernel::instance()->getParameter('host');
         $smallAvatar = empty($data['smallAvatar']) ? '' : $fileService->parseFileUri($data['smallAvatar']);
         $data['smallAvatar'] = empty($smallAvatar) ? $host.'/assets/img/default/avatar.png' : $host.'/files/'.$smallAvatar['path'];
         $mediumAvatar = empty($data['mediumAvatar']) ? '' : $fileService->parseFileUri($data['mediumAvatar']);
@@ -155,12 +155,12 @@ class UserFilter implements Filter
 
     protected function getVipLevelService()
     {
-        return ServiceKernel::instance()->createService('VipPlugin:Vip:LevelService');
+        return ServiceKernel::instance()->createService('Vip:Vip.LevelService');
     }
 
     protected function getVipService()
     {
-        return ServiceKernel::instance()->createService('VipPlugin:Vip:VipService');
+        return ServiceKernel::instance()->createService('Vip:Vip.VipService');
     }
 }
 

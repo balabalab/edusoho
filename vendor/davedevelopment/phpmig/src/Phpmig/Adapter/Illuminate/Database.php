@@ -21,13 +21,13 @@ class Database implements AdapterInterface
     protected $tableName;
 
     /**
-     * @var \Illuminate\Database\Connection
+     * @var \Illuminate\Database\Capsule\Manager
      */
     protected $adapter;
 
-    public function __construct($adapter, $tableName, $connectionName = '')
+    public function __construct($adapter, $tableName)
     {
-        $this->adapter = $adapter->connection($connectionName);
+        $this->adapter = $adapter;
         $this->tableName = $tableName;
     }
 
@@ -38,17 +38,13 @@ class Database implements AdapterInterface
      */
     public function fetchAll()
     {
-        $fetchMode = $this->adapter
+        $fetchMode = $this->adapter->connection()
             ->getFetchMode();
 
-        $all = $this->adapter
+        $all = $this->adapter->connection()
             ->table($this->tableName)
             ->orderBy('version')
             ->get();
-
-        if(!is_array($all)) {
-            $all = $all->toArray();
-        }
 
         return array_map(function($v) use($fetchMode) {
 
@@ -74,7 +70,7 @@ class Database implements AdapterInterface
      */
     public function up(Migration $migration)
     {
-        $this->adapter
+        $this->adapter->connection()
             ->table($this->tableName)
             ->insert(array(
                 'version' => $migration->getVersion()
@@ -91,7 +87,7 @@ class Database implements AdapterInterface
      */
     public function down(Migration $migration)
     {
-        $this->adapter
+        $this->adapter->connection()
             ->table($this->tableName)
             ->where('version', $migration->getVersion())
             ->delete();
@@ -106,7 +102,7 @@ class Database implements AdapterInterface
      */
     public function hasSchema()
     {
-        return $this->adapter->getSchemaBuilder()->hasTable($this->tableName);
+        return $this->adapter->schema()->hasTable($this->tableName);
     }
 
     /**
@@ -117,7 +113,7 @@ class Database implements AdapterInterface
     public function createSchema()
     {
         /* @var \Illuminate\Database\Schema\Blueprint $table */
-        $this->adapter->getSchemaBuilder()->create($this->tableName, function ($table) {
+        $this->adapter->schema()->create($this->tableName, function ($table) {
             $table->string('version');
         });
     }

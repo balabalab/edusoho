@@ -2,7 +2,7 @@
 
 namespace Topxia\Api\SpecialResponse;
 
-use AppBundle\Common\ArrayToolkit;
+use Topxia\Common\ArrayToolkit;
 
 
 class QiQiuYunV1CourseResponse implements SpecialResponse

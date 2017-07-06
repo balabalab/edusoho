@@ -2,26 +2,20 @@
 
 namespace Codeages\Biz\Framework\Event;
 
-use Codeages\Biz\Framework\Context\Biz;
+use Codeages\Biz\Framework\Context\Kernel;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 abstract class EventSubscriber implements EventSubscriberInterface
 {
-    /**
-     * @var Biz
-     */
-    private $biz;
+    private $kernel;
 
-    public function __construct(Biz $biz)
+    public function __construct(Kernel $kernel)
     {
-        $this->biz = $biz;
+        $this->kernel = $kernel;
     }
 
-    /**
-     * @return Biz
-     */
-    public function getBiz()
+    public function getKernel()
     {
-        return $this->biz;
+        return $this->kernel;
     }
 }

@@ -3,17 +3,13 @@
 namespace Topxia\Api\Resource;
 
 use Silex\Application;
-use Topxia\Service\Common\ServiceKernel;
+use Topxia\Common\ArrayToolkit;
 use Symfony\Component\HttpFoundation\Request;
 
 class CourseThreadPost extends BaseResource
 {
     public function get(Application $app, Request $request, $courseId, $threadId, $postId)
     {
-        if (!$this->getCourseService()->canTakeCourse($courseId)) {
-            return $this->error('403', '无权限查看');
-        }
-
         $courseThreadPost = $this->getCourseThreadService()->getPost($courseId, $postId);
 
         $user = $this->getUserService()->getUser($courseThreadPost['userId']);
@@ -30,16 +26,16 @@ class CourseThreadPost extends BaseResource
 
     protected function getCourseThreadService()
     {
-        return $this->getServiceKernel()->createService('Course:ThreadService');
+        return $this->getServiceKernel()->createService('Course.ThreadService');
     }
 
     protected function getUserService()
     {
-        return ServiceKernel::instance()->createService('User:UserService');
+        return $this->getServiceKernel()->createService('User.UserService');
     }
 
     protected function getCourseService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 }

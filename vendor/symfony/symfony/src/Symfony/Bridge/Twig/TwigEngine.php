@@ -75,14 +75,14 @@ class TwigEngine implements EngineInterface, StreamingEngineInterface
 
         $loader = $this->environment->getLoader();
 
-        if ($loader instanceof \Twig_ExistsLoaderInterface || method_exists($loader, 'exists')) {
+        if ($loader instanceof \Twig_ExistsLoaderInterface) {
             return $loader->exists((string) $name);
         }
 
         try {
             // cast possible TemplateReferenceInterface to string because the
             // EngineInterface supports them but Twig_LoaderInterface does not
-            $loader->getSourceContext((string) $name)->getCode();
+            $loader->getSource((string) $name);
         } catch (\Twig_Error_Loader $e) {
             return false;
         }
@@ -112,7 +112,7 @@ class TwigEngine implements EngineInterface, StreamingEngineInterface
      * @param string|TemplateReferenceInterface|\Twig_Template $name A template name or an instance of
      *                                                               TemplateReferenceInterface or \Twig_Template
      *
-     * @return \Twig_Template A \Twig_Template instance
+     * @return \Twig_TemplateInterface A \Twig_TemplateInterface instance
      *
      * @throws \InvalidArgumentException if the template does not exist
      */

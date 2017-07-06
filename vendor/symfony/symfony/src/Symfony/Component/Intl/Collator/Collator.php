@@ -88,7 +88,7 @@ class Collator
      *
      * @param string $locale The locale code. The only currently supported locale is "en" (or null using the default locale, i.e. "en")
      *
-     * @return self
+     * @return Collator
      *
      * @throws MethodArgumentValueNotImplementedException When $locale different than "en" or null is passed
      */

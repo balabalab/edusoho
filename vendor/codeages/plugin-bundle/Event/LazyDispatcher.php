@@ -24,13 +24,6 @@ class LazyDispatcher extends EventDispatcher implements EventDispatcherInterface
 
     public function dispatch($eventName, Event $event = null)
     {
-        if (null === $event) {
-            $event = new Event();
-        }
-
-        $event->setDispatcher($this);
-        $event->setName($eventName);
-
         $subscribers = $this->container->get('codeags_plugin.event.lazy_subscribers');
 
         $callbacks = $subscribers->getCallbacks($eventName);
@@ -43,6 +36,10 @@ class LazyDispatcher extends EventDispatcher implements EventDispatcherInterface
             list($id, $method) = $callback;
             if($this->container->has($id)){
                 call_user_func(array($this->container->get($id), $method), $event);
+            }else{
+                // @TODO Topxia迁移后通过tag方式重写Subscriber后可移除这段分支代码
+                $subscriber = new $id();
+                call_user_func(array($subscriber, $method), $event);
             }
         }
 

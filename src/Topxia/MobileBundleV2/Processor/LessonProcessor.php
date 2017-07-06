@@ -1,38 +1,35 @@
 <?php
-
 namespace Topxia\MobileBundleV2\Processor;
 
 interface LessonProcessor
 {
-    public function getCourseLessons();
+	public function getCourseLessons();
+	public function getLesson();
+	public function getLessonMaterial();
 
-    public function getLesson();
+	/*
+	* 	courseId
+	*	lessonId
+	*	token
+	*/
+	public function learnLesson();
 
-    public function getLessonMaterial();
+	/*
+	* 	courseId
+	*	lessonId
+	*	token
+	*/
+	public function unLearnLesson();
 
-    /*
-    * 	courseId
-    *	lessonId
-    *	token
-    */
-    public function learnLesson();
+	public function getLearnStatus();
 
-    /*
-    * 	courseId
-    *	lessonId
-    *	token
-    */
-    public function unLearnLesson();
+	public function getLessonStatus();
 
-    public function getLearnStatus();
+	public function getTestpaperInfo();
 
-    public function getLessonStatus();
+	public function getVideoMediaUrl();
 
-    public function getTestpaperInfo();
+	public function getCourseDownLessons();
 
-    public function getVideoMediaUrl();
-
-    public function getCourseDownLessons();
-
-    public function getLocalVideo();
+	public function getLocalVideo();
 }

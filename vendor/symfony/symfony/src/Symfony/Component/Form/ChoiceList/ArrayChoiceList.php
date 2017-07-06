@@ -236,11 +236,7 @@ class ArrayChoiceList implements ChoiceListInterface
                 continue;
             } elseif (!is_scalar($choice)) {
                 return false;
-            }
-
-            $choice = false === $choice ? '0' : (string) $choice;
-
-            if (isset($cache[$choice])) {
+            } elseif (isset($cache[$choice])) {
                 return false;
             }
 

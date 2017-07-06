@@ -29,12 +29,8 @@ class DynamicQueryBuilder extends QueryBuilder
             return $this;
         }
 
-        if ($this->matchInCondition($where)) {
+        if ($this->isInCondition($where)) {
             return $this->addWhereIn($where);
-        }
-
-        if ($likeType = $this->matchLikeCondition($where)) {
-            return $this->addWhereLike($where, $likeType);
         }
 
         return parent::andWhere($where);
@@ -48,9 +44,8 @@ class DynamicQueryBuilder extends QueryBuilder
     private function addWhereIn($where)
     {
         $conditionName = $this->getConditionName($where);
-
-        if (!is_array($this->conditions[$conditionName])) {
-            throw new DaoException('IN search parameter must be an Array type');
+        if (empty($this->conditions[$conditionName]) or !is_array($this->conditions[$conditionName])) {
+            return $this;
         }
 
         $marks = array();
@@ -64,28 +59,6 @@ class DynamicQueryBuilder extends QueryBuilder
         return parent::andWhere($where);
     }
 
-    private function addWhereLike($where, $likeType)
-    {
-        $conditionName = $this->getConditionName($where);
-
-        if (empty($this->conditions[$conditionName])) {
-            return $this;
-        }
-
-        //PRE_LIKE
-        if ($likeType == 'pre_like') {
-            $where = preg_replace('/pre_like/i', 'LIKE', $where, 1);
-            $this->conditions[$conditionName] = "{$this->conditions[$conditionName]}%";
-        } elseif ($likeType == 'suf_like') {
-            $where = preg_replace('/suf_like/i', 'LIKE', $where, 1);
-            $this->conditions[$conditionName] = "%{$this->conditions[$conditionName]}";
-        } else {
-            $this->conditions[$conditionName] = "%{$this->conditions[$conditionName]}%";
-        }
-
-        return parent::andWhere($where);
-    }
-
     public function execute()
     {
         foreach ($this->conditions as $field => $value) {
@@ -95,25 +68,20 @@ class DynamicQueryBuilder extends QueryBuilder
         return parent::execute();
     }
 
-    private function matchLikeCondition($where)
+    private function isInCondition($where)
     {
-        $matched = preg_match('/\s+((PRE_|SUF_)?LIKE)\s+/i', $where, $matches);
-        if (!$matched) {
+        $matched = preg_match('/\s+(IN)\s+/', $where, $matches);
+        if (empty($matched)) {
             return false;
+        } else {
+            return true;
         }
-
-        return strtolower($matches[1]);
-    }
-
-    private function matchInCondition($where)
-    {
-        return preg_match('/\s+(IN)\s+/i', $where);
     }
 
     private function getConditionName($where)
     {
         $matched = preg_match('/:([a-zA-z0-9_]+)/', $where, $matches);
-        if (!$matched) {
+        if (empty($matched)) {
             return false;
         }
 

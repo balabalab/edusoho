@@ -1,12 +1,13 @@
 <?php
-
 namespace Topxia\Service\Common;
 
-use Biz\User\CurrentUser;
 use Codeages\Biz\Framework\Context\Biz;
 use Codeages\Biz\Framework\Dao\Connection;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Finder\Finder;
+use Topxia\Service\Common\Redis\RedisFactory;
+use Topxia\Service\User\CurrentUser;
 
 class ServiceKernel
 {
@@ -43,13 +44,14 @@ class ServiceKernel
 
     public function getRedis($group = 'default')
     {
-        if (empty($biz['cache.cluster'])) {
-            return false;
+        $redisFactory = RedisFactory::instance($this);
+        $redis        = $redisFactory->getRedis($group);
+
+        if ($redis) {
+            return $redis;
         }
 
-        $cacheCluster = $biz['cache.cluster'];
-
-        return $cacheCluster->getCluster();
+        return false;
     }
 
     public static function create($environment, $debug)
@@ -58,9 +60,9 @@ class ServiceKernel
             return self::$_instance;
         }
 
-        $instance = new self();
+        $instance              = new self();
         $instance->environment = $environment;
-        $instance->debug = (bool) $debug;
+        $instance->debug       = (Boolean) $debug;
         $instance->registerModuleDirectory(realpath(__DIR__.'/../../../'));
 
         self::$_instance = $instance;
@@ -78,7 +80,6 @@ class ServiceKernel
         }
 
         self::$_instance->boot();
-
         return self::$_instance;
     }
 
@@ -92,9 +93,9 @@ class ServiceKernel
         }
 
         //@ TODO 新的事件机制通过Symfony Tag形式注入，但是APP接口并没有使用Symfony, 重构接口时去掉判断
-        if (defined('RUNTIME_ENV') && RUNTIME_ENV === 'API') {
+        if(defined('RUNTIME_ENV') && RUNTIME_ENV === 'API'){
             self::$_dispatcher = new EventDispatcher();
-        } else {
+        }else{
             self::$_dispatcher = self::instance()->biz['dispatcher'];
         }
 
@@ -108,12 +109,51 @@ class ServiceKernel
         }
 
         $this->booted = true;
+
+        $moduleConfigCacheFile = $this->getParameter('kernel.root_dir').'/cache/'.$this->environment.'/modules_config.php';
+
+        if (file_exists($moduleConfigCacheFile)) {
+            $this->_moduleConfig = include $moduleConfigCacheFile;
+        } else {
+            $finder = new Finder();
+            $finder->directories()->depth('== 0');
+
+            foreach ($this->_moduleDirectories as $dir) {
+                if (glob($dir.'/*/Service', GLOB_ONLYDIR)) {
+                    $finder->in($dir.'/*/Service');
+                }
+            }
+
+            foreach ($finder as $dir) {
+                $filepath = $dir->getRealPath().'/module_config.php';
+
+                if (file_exists($filepath)) {
+                    $this->_moduleConfig = array_merge_recursive($this->_moduleConfig, include $filepath);
+                }
+            }
+
+            if (!$this->debug) {
+                $cache = "<?php \nreturn ".var_export($this->_moduleConfig, true).';';
+                file_put_contents($moduleConfigCacheFile, $cache);
+            }
+        }
+
+        $subscribers = empty($this->_moduleConfig['event_subscriber']) ? array() : $this->_moduleConfig['event_subscriber'];
+
+
+        foreach ($subscribers as $subscriber) {
+            //@ TODO 新的事件机制通过Symfony Tag形式注入，但是APP接口并没有使用Symfony, 重构接口时去掉判断
+            if(defined('RUNTIME_ENV') && RUNTIME_ENV === 'API'){
+                $this->dispatcher()->addSubscriber(new $subscriber());
+            }else{
+                $this->biz['subscribers'][] = $subscriber;
+            }
+        }
     }
 
     public function setParameterBag($parameterBag)
     {
         $this->parameterBag = $parameterBag;
-
         return $this;
     }
 
@@ -129,7 +169,6 @@ class ServiceKernel
     public function setTranslator($translator)
     {
         $this->translator = $translator;
-
         return $this;
     }
 
@@ -145,7 +184,6 @@ class ServiceKernel
     public function setTranslatorEnabled($boolean = true)
     {
         $this->translatorEnabled = $boolean;
-
         return $this;
     }
 
@@ -165,9 +203,7 @@ class ServiceKernel
 
     public function setCurrentUser($currentUser)
     {
-        $biz = $this->getBiz();
-        $biz['user'] = $currentUser;
-
+        $this->currentUser = $currentUser;
         return $this;
     }
 
@@ -176,18 +212,16 @@ class ServiceKernel
      */
     public function getCurrentUser()
     {
-        $biz = $this->getBiz();
-        if (!isset($biz['user'])) {
+        if (is_null($this->currentUser)) {
             throw new \RuntimeException('The `CurrentUser` of ServiceKernel is not setted!');
         }
 
-        return $biz['user'];
+        return $this->currentUser;
     }
 
     public function setEnvVariable(array $env)
     {
         $this->env = $env;
-
         return $this;
     }
 
@@ -215,14 +249,8 @@ class ServiceKernel
     public function createService($name)
     {
         if (empty($this->pool[$name])) {
-            $this->pool[$name] = $this->biz->service($name);
-
-            // $class = $this->getClassName('service', $name);
-            // if (class_exists($class)) {
-            //     $this->pool[$name] = new $class();
-            // } else {
-            //     $this->pool[$name] = $this->biz->service($name);
-            // }
+            $class = $this->getClassName('service', $name);
+            $this->pool[$name] = new  $class();
         }
 
         return $this->pool[$name];
@@ -232,8 +260,9 @@ class ServiceKernel
     {
         if (empty($this->pool[$name])) {
             $class = $this->getClassName('dao', $name);
-            $dao = new $class();
+            $dao   = new $class();
             $dao->setConnection($this->getConnection());
+            $dao->setRedis($this->getRedis());
             $this->pool[$name] = $dao;
         }
 
@@ -253,7 +282,6 @@ class ServiceKernel
     public function registerModuleDirectory($dir)
     {
         $this->_moduleDirectories[] = $dir;
-
         return $this;
     }
 
@@ -276,7 +304,6 @@ class ServiceKernel
         foreach ($messages as &$message) {
             $message = $this->trans($message, $arguments, $domain, $locale);
         }
-
         return $messages;
     }
 
@@ -285,7 +312,6 @@ class ServiceKernel
         if ($this->getTranslatorEnabled()) {
             return $this->getTranslator()->trans($message, $arguments, $domain, $locale);
         }
-
         return strtr((string) $message, $arguments);
     }
 
@@ -297,38 +323,27 @@ class ServiceKernel
             return $classMap[$name];
         }
 
-        return $this->getServiceClassName($type, $name);
-    }
-
-    protected function getServiceClassName($type, $name)
-    {
-        $type = strtolower($type);
-        list($namespace, $name) = explode(':', $name, 2);
-
-        if (strpos($name, '.') > 0) {
+        if (strpos($name, ':') > 0) {
+            list($namespace, $name) = explode(':', $name, 2);
             $namespace .= '\\Service';
-            list($module, $className) = explode('.', $name);
-
-            if ($type == 'dao') {
-                return $namespace.'\\'.$module.'\\Dao\\Impl\\'.$className.'Impl';
-            }
-
-            return $namespace.'\\'.$module.'\\Impl\\'.$className.'Impl';
         } else {
-            $namespace = substr(__NAMESPACE__, 0, -strlen('Common') - 1).'\\'.$namespace;
+            $namespace = substr(__NAMESPACE__, 0, -strlen('Common') - 1);
         }
+
+        list($module, $className) = explode('.', $name);
+
+        $type = strtolower($type);
 
         if ($type == 'dao') {
-            return $namespace.'\\Dao\\Impl\\'.$name.'Impl';
+            return $namespace.'\\'.$module.'\\Dao\\Impl\\'.$className.'Impl';
         }
 
-        return $namespace.'\\Impl\\'.$name.'Impl';
+        return $namespace.'\\'.$module.'\\Impl\\'.$className.'Impl';
     }
 
     public function setBiz(Biz $biz)
     {
         $this->biz = $biz;
-
         return $this;
     }
 
@@ -337,7 +352,6 @@ class ServiceKernel
         if (!$this->biz) {
             throw new \RuntimeException('The `Biz Container` of ServiceKernel is not setted!');
         }
-
         return $this->biz;
     }
 

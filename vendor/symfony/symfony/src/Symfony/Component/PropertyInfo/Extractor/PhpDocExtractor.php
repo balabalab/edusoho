@@ -208,7 +208,7 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
         // Use a ReflectionProperty instead of $class to get the parent class if applicable
         try {
             $reflectionProperty = new \ReflectionProperty($class, $property);
-        } catch (\ReflectionException $e) {
+        } catch (\ReflectionException $reflectionException) {
             return;
         }
 
@@ -253,9 +253,6 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
 
             try {
                 $reflectionMethod = new \ReflectionMethod($class, $methodName);
-                if ($reflectionMethod->isStatic()) {
-                    continue;
-                }
 
                 if (
                     (self::ACCESSOR === $type && 0 === $reflectionMethod->getNumberOfRequiredParameters()) ||
@@ -263,7 +260,7 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
                 ) {
                     break;
                 }
-            } catch (\ReflectionException $e) {
+            } catch (\ReflectionException $reflectionException) {
                 // Try the next prefix if the method doesn't exist
             }
         }

@@ -25,21 +25,21 @@ class AsseticNode extends BaseAsseticNode
     {
         $vars = array();
         foreach ($asset->getVars() as $var) {
-            $vars[] = new \Twig_Node_Expression_Constant($var, $this->getTemplateLine());
+            $vars[] = new \Twig_Node_Expression_Constant($var, $this->getLine());
 
             // Retrieves values of assetic vars from the context, $context['assetic']['vars'][$var].
             $vars[] = new \Twig_Node_Expression_GetAttr(
                 new \Twig_Node_Expression_GetAttr(
-                    new \Twig_Node_Expression_Name('assetic', $this->getTemplateLine()),
-                    new \Twig_Node_Expression_Constant('vars', $this->getTemplateLine()),
-                    new \Twig_Node_Expression_Array(array(), $this->getTemplateLine()),
+                    new \Twig_Node_Expression_Name('assetic', $this->getLine()),
+                    new \Twig_Node_Expression_Constant('vars', $this->getLine()),
+                    new \Twig_Node_Expression_Array(array(), $this->getLine()),
                     \Twig_Template::ARRAY_CALL,
-                    $this->getTemplateLine()
+                    $this->getLine()
                 ),
-                new \Twig_Node_Expression_Constant($var, $this->getTemplateLine()),
-                new \Twig_Node_Expression_Array(array(), $this->getTemplateLine()),
+                new \Twig_Node_Expression_Constant($var, $this->getLine()),
+                new \Twig_Node_Expression_Array(array(), $this->getLine()),
                 \Twig_Template::ARRAY_CALL,
-                $this->getTemplateLine()
+                $this->getLine()
             );
         }
         $compiler
@@ -52,16 +52,16 @@ class AsseticNode extends BaseAsseticNode
 
     private function getPathFunction($name, array $vars = array())
     {
-        $nodes = array(new \Twig_Node_Expression_Constant('_assetic_'.$name, $this->getTemplateLine()));
+        $nodes = array(new \Twig_Node_Expression_Constant('_assetic_'.$name, $this->getLine()));
 
         if (!empty($vars)) {
-            $nodes[] = new \Twig_Node_Expression_Array($vars, $this->getTemplateLine());
+            $nodes[] = new \Twig_Node_Expression_Array($vars, $this->getLine());
         }
 
         return new \Twig_Node_Expression_Function(
             'path',
             new \Twig_Node($nodes),
-            $this->getTemplateLine()
+            $this->getLine()
         );
     }
 
@@ -70,13 +70,13 @@ class AsseticNode extends BaseAsseticNode
         $arguments = array($path);
 
         if ($this->hasAttribute('package')) {
-            $arguments[] = new \Twig_Node_Expression_Constant($this->getAttribute('package'), $this->getTemplateLine());
+            $arguments[] = new \Twig_Node_Expression_Constant($this->getAttribute('package'), $this->getLine());
         }
 
         return new \Twig_Node_Expression_Function(
             'asset',
             new \Twig_Node($arguments),
-            $this->getTemplateLine()
+            $this->getLine()
         );
     }
 }

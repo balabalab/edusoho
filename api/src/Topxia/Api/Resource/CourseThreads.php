@@ -3,8 +3,7 @@
 namespace Topxia\Api\Resource;
 
 use Silex\Application;
-use AppBundle\Common\ArrayToolkit;
-use Topxia\Service\Common\ServiceKernel;
+use Topxia\Common\ArrayToolkit;
 use Symfony\Component\HttpFoundation\Request;
 
 class CourseThreads extends BaseResource
@@ -15,11 +14,12 @@ class CourseThreads extends BaseResource
         $limit = $request->query->get('limit', 10);
         $sort = $request->query->get('sort', 'posted');
         $simplify = $request->query->get('simplify', 0);
+
         $conditions = array(
-            'courseId' => $courseId,
+            'courseId' => $courseId
         );
 
-        $total = $this->getCourseThreadService()->countThreads($conditions);
+        $total = $this->getCourseThreadService()->searchThreadCount($conditions);
 
         $courseThreads = $this->getCourseThreadService()->searchThreads($conditions, $sort, $start, $limit);
 
@@ -49,18 +49,13 @@ class CourseThreads extends BaseResource
         return $this->multicallSimplify('CourseThread', $res);
     }
 
-    protected function getCourseService()
-    {
-        return $this->getServiceKernel()->createService('Course:CourseService');
-    }
-
     protected function getCourseThreadService()
     {
-        return $this->getServiceKernel()->createService('Course:ThreadService');
+        return $this->getServiceKernel()->createService('Course.ThreadService');
     }
 
     protected function getUserService()
     {
-        return ServiceKernel::instance()->createService('User:UserService');
+        return $this->getServiceKernel()->createService('User.UserService');
     }
 }

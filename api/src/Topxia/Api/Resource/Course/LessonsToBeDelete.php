@@ -6,9 +6,6 @@ use Silex\Application;
 use Topxia\Api\Resource\BaseResource;
 use Symfony\Component\HttpFoundation\Request;
 
-/**
- * 为了兼容老版本APP的获取课时路由：/course/{courseId}/lessons.
- */
 class LessonsToBeDelete extends BaseResource
 {
     public function get(Application $app, Request $request, $courseId)
@@ -22,11 +19,18 @@ class LessonsToBeDelete extends BaseResource
             $conditions['courseId'] = $courseId;
         }
 
-        $total = $this->getCourseService()->searchLessonCount($conditions);
-        $start = $start == -1 ? rand(0, $total - 1) : $start;
-        $lessons = $this->getCourseService()->searchLessons($conditions, array('createdTime' => 'ASC'), $start, $limit);
-
-        return $this->wrap($this->filter($lessons), $total);
+        if (isset($conditions['cursor'])) {
+            $conditions['status']         = 'published';
+            $conditions['updatedTime_GE'] = $conditions['cursor'];
+            $lessons                      = $this->getCourseService()->searchLessons($conditions, array('updatedTime', 'ASC'), $start, $limit);
+            $next                         = $this->nextCursorPaging($conditions['cursor'], $start, $limit, $lessons);
+            return $this->wrap($this->filter($lessons), $next);
+        } else {
+            $total   = $this->getCourseService()->searchLessonCount($conditions);
+            $start   = $start == -1 ? rand(0, $total - 1) : $start;
+            $lessons = $this->getCourseService()->searchLessons($conditions, array('createdTime', 'ASC'), $start, $limit);
+            return $this->wrap($this->filter($lessons), $total);
+        }
     }
 
     public function filter($res)
@@ -37,16 +41,15 @@ class LessonsToBeDelete extends BaseResource
     protected function multicallFilter($name, $res)
     {
         foreach ($res as $key => $one) {
-            $res[$key] = $this->callFilter($name, $one);
-            $res[$key]['body'] = '';
+            $res[$key]            = $this->callFilter($name, $one);
+            $res[$key]['body']    = '';
             $res[$key]['content'] = '';
         }
-
         return $res;
     }
 
     protected function getCourseService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 }

@@ -53,7 +53,7 @@ class Section
      *
      * @param string $id The child section identifier
      *
-     * @return self|null The child section or null when none found
+     * @return Section|null The child section or null when none found
      */
     public function get($id)
     {
@@ -69,7 +69,7 @@ class Section
      *
      * @param string|null $id null to create a new section, the identifier to re-open an existing one
      *
-     * @return self
+     * @return Section A child section
      */
     public function open($id)
     {
@@ -93,7 +93,7 @@ class Section
      *
      * @param string $id The session identifier
      *
-     * @return $this
+     * @return Section The current section
      */
     public function setId($id)
     {

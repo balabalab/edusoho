@@ -21,8 +21,6 @@ use Symfony\Bridge\Monolog\Handler\DebugHandler;
 /**
  * Monolog Provider.
  *
- * @SuppressWarnings(PHPMD.StaticAccess)
- *
  * @author Fabien Potencier <fabien@symfony.com>
  */
 class MonologServiceProvider implements ServiceProviderInterface, BootableProviderInterface

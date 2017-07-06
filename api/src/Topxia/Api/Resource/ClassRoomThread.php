@@ -3,25 +3,19 @@
 namespace Topxia\Api\Resource;
 
 use Silex\Application;
+use Topxia\Common\ArrayToolkit;
 use Symfony\Component\HttpFoundation\Request;
 
 class ClassRoomThread extends BaseResource
 {
+ 
     public function get(Application $app, Request $request, $threadId)
     {
         $thread = $this->getThreadService()->getThread($threadId);
 
-        if (empty($thread)) {
-            return $this->error('not_found', '没有找到');
-        }
-
-        if (!$this->getClassroomService()->canTakeClassroom($thread['targetId'])) {
-            return $this->error('403', '无权限查看');
-        }
-
         $user = $this->getUserService()->getUser($thread['userId']);
         $thread['user'] = $this->simpleUser($user);
-        $classroom = $this->getClassroomService()->getClassroom($thread['targetId']);
+        $classroom = $this->getClassroomService()->getClassRoom($thread['targetId']);
         $thread['target']['id'] = $classroom['id'];
         $thread['target']['title'] = $classroom['title'];
 
@@ -58,16 +52,16 @@ class ClassRoomThread extends BaseResource
 
     protected function getThreadService()
     {
-        return $this->getServiceKernel()->createService('Thread:ThreadService');
+        return $this->getServiceKernel()->createService('Thread.ThreadService');
     }
 
     protected function getClassroomService()
     {
-        return $this->getServiceKernel()->createService('Classroom:ClassroomService');
+        return $this->getServiceKernel()->createService('Classroom:Classroom.ClassroomService');
     }
 
     protected function getUserService()
     {
-        return $this->getServiceKernel()->createService('User:UserService');
+        return $this->getServiceKernel()->createService('User.UserService');
     }
 }

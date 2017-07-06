@@ -4,7 +4,7 @@ namespace Topxia\Api\Resource;
 
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
-use AppBundle\Common\ArrayToolkit;
+use Topxia\Common\ArrayToolkit;
 
 class ClassroomStatus extends BaseResource
 {

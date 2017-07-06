@@ -71,20 +71,17 @@ $resources = array(
     'Emails',
     'User/Password',
     'SmsCodes',
-    'User/VerifiedMobile',
-    'MyLearning',
-    'CoursesLearnProgress',
-    'LessonWatchTime',
-    'MeFriends',
+    'User/VerifiedMobile'
 );
 
 foreach ($resources as $res) {
-    $app["res.{$res}"] = function ($app) use ($res) {
+    $app["res.{$res}"] = function () use ($res) {
         $class    = "Topxia\\Api\\Resource";
         $segments = explode('/', $res);
         foreach ($segments as $seg) {
             $class .= "\\{$seg}";
         }
-        return new $class($app['biz']);
+
+        return new $class();
     };
 }

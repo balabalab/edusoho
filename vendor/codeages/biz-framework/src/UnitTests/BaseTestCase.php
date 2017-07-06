@@ -2,9 +2,7 @@
 
 namespace Codeages\Biz\Framework\UnitTests;
 
-use PHPUnit\Framework\TestCase;
-
-abstract class BaseTestCase extends TestCase
+abstract class BaseTestCase extends \PHPUnit_Framework_TestCase
 {
     protected static $biz;
 
@@ -22,15 +20,30 @@ abstract class BaseTestCase extends TestCase
         self::$biz = $biz;
     }
 
-    public static function emptyDatabaseQuickly()
+    public static function emptyDatabase($all = false)
     {
-        $clear = new DatabaseDataClearer(self::$biz['db']);
-        $clear->clearQuickly();
-    }
+        $db = self::$biz['db'];
 
-    public static function emptyDatabase()
-    {
-        $clear = new DatabaseDataClearer(self::$biz['db']);
-        $clear->clear();
+        if ($all) {
+            $tableNames = $db->getSchemaManager()->listTableNames();
+        } else {
+            $tableNames = $db->getInsertedTables();
+            $tableNames = array_unique($tableNames);
+        }
+
+        $sql = '';
+
+        foreach ($tableNames as $tableName) {
+            if ($tableName == 'migrations') {
+                continue;
+            }
+
+            $sql .= "TRUNCATE {$tableName};";
+        }
+
+        if (!empty($sql)) {
+            $db->exec($sql);
+            $db->resetInsertedTables();
+        }
     }
 }

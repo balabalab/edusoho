@@ -3,8 +3,8 @@
 namespace Topxia\Api\Resource;
 
 use Silex\Application;
-use AppBundle\Common\ArrayToolkit;
 use Symfony\Component\HttpFoundation\Request;
+use Topxia\Common\ArrayToolkit;
 
 class ExerciseResult extends BaseResource
 {
@@ -12,59 +12,36 @@ class ExerciseResult extends BaseResource
     {
         $answers = $request->request->all();
 
-        $answers = $this->answerFormat($answers);
-        $answers['usedTime'] = 0;
+        $rawQuestionItems = $this->getExerciseService()->getItemSetByExerciseId($exerciseId);
+        $questionItems = $rawQuestionItems['items'];
+        $questionIds = ArrayToolkit::column($questionItems, 'questionId');
 
-        $exercise = $this->getTestpaperService()->getTestpaperByIdAndType($exerciseId, 'exercise');
-        if (!$exercise) {
-            return $this->error('404', '该练习不存在!');
-        }
-
-        $canTakeCourse = $this->getCourseService()->canTakeCourse($exercise['courseId']);
-        if (!$canTakeCourse) {
-            return $this->error('500', '无权限访问!');
-        }
-
-        $conditions = array(
-            'mediaId' => $exercise['id'],
-            'mediaType' => 'exercise',
-            'fromCourseId' => $exercise['courseId'],
-        );
-        $activities = $this->getActivityService()->search($conditions, null, 0, 1);
-
-        if (!$activities) {
-            return $this->error('404', '该练习任务不存在!');
-        }
-        $lessonId = $activities[0]['id'];
-
-        $result = $this->getTestpaperService()->startTestpaper($exercise['id'], array('lessonId' => $lessonId, 'courseId' => $exercise['courseId']));
-
-        $this->getTestpaperService()->finishTest($result['id'], $answers);
-
-        return array(
+        $answers = !empty($answers['data']) ? $answers['data'] : array();
+        $exercise = $this->getExerciseService()->getExercise($exerciseId);
+        $result = $this->getExerciseService()->submitExercise($exerciseId, $answers);
+        $course = $this->getCourseService()->getCourse($exercise['courseId']);
+        $lesson = $this->getCourseService()->getCourseLesson($exercise['courseId'], $result['lessonId']);
+        $this->getExerciseService()->finishExercise($course, $lesson, $exercise['courseId'], $exerciseId);
+        $res = array(
             'id' => $result['id'],
         );
+
+        return $res;
     }
 
     public function get(Application $app, Request $request, $lessonId)
     {
         $user = $this->getCurrentUser();
-
-        $task = $this->getTaskService()->getTask($lessonId);
-        $activity = $this->getActivityService()->getActivity($task['activityId']);
-        $exercise = $this->getTestpaperService()->getTestpaperByIdAndType($activity['mediaId'], 'exercise');
-
+        $exercise = $this->getExerciseService()->getExerciseByLessonId($lessonId);
         if (empty($exercise)) {
-            return $this->error('404', '该练习不存在!');
+            return '';
+        }
+        $exerciseResults = $this->getExerciseService()->getItemSetResultByExerciseIdAndUserId($exercise['id'], $user->id);
+        if (empty($exerciseResults)) {
+            throw $this->createNotFoundException('无法查看练习结果！');
         }
 
-        $result = $this->getTestpaperService()->getUserLatelyResultByTestId($user['userId'], $exercise['id'], $exercise['courseId'], $activity['id'], 'exercise');
-
-        if (empty($result)) {
-            return $this->error('404', '没有该练习的结果记录!');
-        }
-
-        return $result;
+        return $exerciseResults;
     }
 
     private function filterItem($items)
@@ -112,42 +89,17 @@ class ExerciseResult extends BaseResource
         return $res;
     }
 
-    private function answerFormat($answers)
+    protected function getExerciseService()
     {
-        if (empty($answers['data'])) {
-            return array();
-        }
-
-        $data = array();
-        foreach ($answers['data'] as $questionId => $value) {
-            $data[$questionId] = $value['answer'];
-        }
-
-        return array('data' => $data);
-    }
-
-    protected function getTestpaperService()
-    {
-        return $this->getServiceKernel()->createService('Testpaper:TestpaperService');
+        return $this->getServiceKernel()->createService('Homework:Homework.ExerciseService');
     }
 
     protected function getQuestionService()
     {
-        return $this->getServiceKernel()->createService('Question:QuestionService');
+        return $this->getServiceKernel()->createService('Question.QuestionService');
     }
-
     private function getCourseService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseService');
-    }
-
-    protected function getTaskService()
-    {
-        return $this->getServiceKernel()->createService('Task:TaskService');
-    }
-
-    protected function getActivityService()
-    {
-        return $this->getServiceKernel()->createService('Activity:ActivityService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 }

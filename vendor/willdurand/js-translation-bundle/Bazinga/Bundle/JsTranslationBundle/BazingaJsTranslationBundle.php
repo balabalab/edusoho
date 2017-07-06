@@ -2,7 +2,6 @@
 
 namespace Bazinga\Bundle\JsTranslationBundle;
 
-use Bazinga\Bundle\JsTranslationBundle\DependencyInjection\Compiler\TranslationResourceFilesPass;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Bazinga\Bundle\JsTranslationBundle\DependencyInjection\Compiler\AddLoadersPass;
@@ -17,6 +16,5 @@ class BazingaJsTranslationBundle extends Bundle
         parent::build($container);
 
         $container->addCompilerPass(new AddLoadersPass());
-        $container->addCompilerPass(new TranslationResourceFilesPass());
     }
 }

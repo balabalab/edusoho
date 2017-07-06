@@ -3,8 +3,8 @@
 namespace Topxia\Api\Resource;
 
 use Silex\Application;
-use AppBundle\Common\ArrayToolkit;
 use Symfony\Component\HttpFoundation\Request;
+use Topxia\Common\ArrayToolkit;
 
 class Homework extends BaseResource
 {
@@ -12,50 +12,25 @@ class Homework extends BaseResource
     {
         $idType = $request->query->get('_idType');
         if ('lesson' == $idType) {
-            $task = $this->getTaskService()->getTask($id);
-            $course = $this->getCourseService()->getCourse($task['courseId']);
-
-            if (!$course['isDefault']) {
-                return $this->error('404', '该作业不存在!');
-            }
-            
-            //只为兼容移动端学习引擎2.0以前的版本，之后需要修改
-            $conditions = array(
-                'categoryId' => $task['categoryId'],
-                'status' => 'published',
-                'type' => 'homework',
-            );
-            $homeworkTasks = $this->getTaskService()->searchTasks($conditions, null, 0, 1);
-            if (!$homeworkTasks) {
-                return $this->error('404', '该作业不存在!');
-            }
-            $homeworkTask = $homeworkTasks[0];
-
-            $activity = $this->getActivityService()->getActivity($homeworkTask['activityId']);
-            $homework = $this->getTestpaperService()->getTestpaperByIdAndType($activity['mediaId'], $activity['mediaType']);
+            $homework = $this->getHomeworkService()->getHomeworkByLessonId($id);
         } else {
-            $homework = $this->getTestpaperService()->getTestpaperByIdAndType($id, 'homework');
+            $homework = $this->getHomeworkService()->getHomework($id);
         }
 
         if (empty($homework)) {
             return $this->error('404', '该作业不存在!');
         }
 
-        $canTakeCourse = $this->getCourseService()->canTakeCourse($homework['courseId']);
-        if (!$canTakeCourse) {
-            return $this->error('500', '无权限访问!');
-        }
-
-        $course = $this->getCourseService()->getCourse($homework['courseId']);
+        $course = $this->getCorrseService()->getCourse($homework['courseId']);
         $homework['courseTitle'] = $course['title'];
-        $homework['lessonTitle'] = $homework['name'];
-        $homework['lessonId'] = $id;
+        $lesson = $this->getCorrseService()->getLesson($homework['lessonId']);
+        $homework['lessonTitle'] = $lesson['title'];
 
         if ('lesson' != $idType) {
-            $items = $this->getTestpaperService()->findItemsByTestId($homework['id']);
-            $indexdItems = ArrayToolkit::column($items, 'questionId');
-            $questions = $this->getQuestionService()->findQuestionsByIds($indexdItems);
-            $homework['items'] = $this->filterItem($questions, null, 0, 0);
+            $items = $this->getHomeworkService()->findItemsByHomeworkId($homework['id']);
+            $indexdItems = ArrayToolkit::index($items, 'questionId');
+            $questions = $this->getQuestionService()->findQuestionsByIds(array_keys($indexdItems));
+            $homework['items'] = $this->filterItem($questions, null);
         }
 
         return $this->filter($homework);
@@ -64,29 +39,14 @@ class Homework extends BaseResource
     public function result(Application $app, Request $request, $id)
     {
         $currentUser = $this->getCurrentUser();
-        $homeworkResult = $this->getTestpaperService()->getTestpaperResult($id);
+        $homeworkResult = $this->getHomeworkService()->getResult($id);
 
-        if (empty($homeworkResult)) {
-            return $this->error('404', '作业结果不存在！');
-        }
-
-        $activity = $this->getActivityService()->getActivity($homeworkResult['lessonId']);
-        if (empty($activity)) {
-            return $this->error('404', '作业任务不存在！');
-        }
-
-        $homework = $this->getTestpaperService()->getTestpaperByIdAndType($homeworkResult['testId'], $activity['mediaType']);
+        $homework = $this->getHomeworkService()->getHomework($homeworkResult['homeworkId']);
 
         if (empty($homework)) {
-            return $this->error('404', '作业不存在！');
+            return $this->error('500', '作业不存在！');
         }
 
-        $canTakeCourse = $this->getCourseService()->canTakeCourse($homework['courseId']);
-        if (!$canTakeCourse) {
-            return $this->error('500', '无权限访问!');
-        }
-
-        $canCheckHomework = $this->getTestpaperService()->canLookTestpaper($homeworkResult['id']);
         if (empty($currentUser) || (!$canCheckHomework && $homeworkResult['userId'] != $currentUser['id'])) {
             return $this->error('500', '不能查看该作业结果');
         }
@@ -95,40 +55,38 @@ class Homework extends BaseResource
             return $this->error('500', '作业还未批阅');
         }
 
-        $course = $this->getCourseService()->getCourse($homework['courseId']);
+        $course = $this->getCorrseService()->getCourse($homework['courseId']);
         $homework['courseTitle'] = $course['title'];
-        $homework['lessonTitle'] = $homework['name'];
+        $lesson = $this->getCorrseService()->getLesson($homework['lessonId']);
+        if (empty($lesson)) {
+            return $this->error('500', '作业所属课时不存在！');
+        }
 
-        $items = $this->getTestpaperService()->findItemsByTestId($homework['id']);
-        $indexdItems = ArrayToolkit::column($items, 'questionId');
-        $questions = $this->getQuestionService()->findQuestionsByIds($indexdItems);
+        $homework['lessonTitle'] = $lesson['title'];
 
-        $itemSetResults = $this->getTestpaperService()->findItemResultsByResultId($homeworkResult['id']);
+        $items = $this->getHomeworkService()->findItemsByHomeworkId($homework['id']);
+        $indexdItems = ArrayToolkit::index($items, 'questionId');
+        $questions = $this->getQuestionService()->findQuestionsByIds(array_keys($indexdItems));
+
+        $itemSetResults = $this->getHomeworkService()->findItemResultsbyHomeworkResultId($homeworkResult['id']);
         $itemSetResults = ArrayToolkit::index($itemSetResults, 'questionId');
-        $homework['items'] = $this->filterItem($questions, $itemSetResults, $homework['id'], $homeworkResult['id']);
+        $homework['items'] = $this->filterItem($questions, $itemSetResults);
 
         return $this->filter($homework);
     }
 
-    private function filterItem($items, $itemSetResults, $homeworkId, $resultId)
+    private function filterItem($items, $itemSetResults)
     {
         $newItmes = array();
         $materialMap = array();
         foreach ($items as $item) {
             $item = ArrayToolkit::parts($item, array('id', 'type', 'stem', 'answer', 'analysis', 'metas', 'difficulty', 'parentId'));
-            $item['stem'] = $this->filterHtml($item['stem']);
-            $item['analysis'] = $this->filterHtml($item['analysis']);
-
             if (empty($item['metas'])) {
                 $item['metas'] = array();
             }
             if (isset($item['metas']['choices'])) {
                 $metas = array_values($item['metas']['choices']);
-                
-                $self = $this;
-                $item['metas'] = array_map(function ($choice) use ($self) {
-                    return $self->filterHtml($choice);
-                }, $metas);
+                $item['metas'] = $metas;
             }
 
             $item['answer'] = $this->filterAnswer($item, $itemSetResults);
@@ -137,22 +95,8 @@ class Homework extends BaseResource
                 $materialMap[$item['id']] = array();
             }
 
-            if ($itemSetResults && !empty($itemSetResults[$item['id']])) {
+            if ($itemSetResults) {
                 $item['result'] = $itemSetResults[$item['id']];
-            } else {
-                $item['result'] = array(
-                    'id' => '0',
-                    'itemId' => '0',
-                    'testId' => $homeworkId,
-                    'resultId' => $resultId,
-                    'answer' => null,
-                    'questionId' => $item['id'],
-                    'status' => 'noAnswer',
-                    'score' => '0',
-                    'resultId' => $resultId,
-                    'teacherSay' => null,
-                    'type' => $item['type']
-                );
             }
 
             $item['stem'] = $this->coverDescription($item['stem']);
@@ -223,38 +167,18 @@ class Homework extends BaseResource
         return $stem;
     }
 
-    protected function canCheckHomework($homework)
+    protected function getHomeworkService()
     {
-        try {
-            $this->getCourseService()->tryManageCourse($homework['courseId']);
-            return true;
-        } catch (\Exception $e) {
-            return false;
-        }
+        return $this->getServiceKernel()->createService('Homework:Homework.HomeworkService');
     }
 
     protected function getQuestionService()
     {
-        return $this->getServiceKernel()->createService('Question:QuestionService');
+        return $this->getServiceKernel()->createService('Question.QuestionService');
     }
 
-    protected function getTestpaperService()
+    protected function getCorrseService()
     {
-        return $this->getServiceKernel()->createService('Testpaper:TestpaperService');
-    }
-
-    protected function getCourseService()
-    {
-        return $this->getServiceKernel()->createService('Course:CourseService');
-    }
-
-    protected function getTaskService()
-    {
-        return $this->getServiceKernel()->createService('Task:TaskService');
-    }
-
-    protected function getActivityService()
-    {
-        return $this->getServiceKernel()->createService('Activity:ActivityService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 }

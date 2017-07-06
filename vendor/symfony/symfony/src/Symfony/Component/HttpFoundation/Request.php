@@ -261,7 +261,7 @@ class Request
     /**
      * Creates a new request with values from PHP's super globals.
      *
-     * @return static
+     * @return Request A new request
      */
     public static function createFromGlobals()
     {
@@ -304,7 +304,7 @@ class Request
      * @param array  $server     The server parameters ($_SERVER)
      * @param string $content    The raw body data
      *
-     * @return static
+     * @return Request A Request instance
      */
     public static function create($uri, $method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $server = array(), $content = null)
     {
@@ -422,7 +422,7 @@ class Request
      * @param array $files      The FILES parameters
      * @param array $server     The SERVER parameters
      *
-     * @return static
+     * @return Request The duplicated request
      */
     public function duplicate(array $query = null, array $request = null, array $attributes = null, array $cookies = null, array $files = null, array $server = null)
     {
@@ -596,7 +596,6 @@ class Request
      *  * Request::HEADER_CLIENT_HOST:  defaults to X-Forwarded-Host  (see getHost())
      *  * Request::HEADER_CLIENT_PORT:  defaults to X-Forwarded-Port  (see getPort())
      *  * Request::HEADER_CLIENT_PROTO: defaults to X-Forwarded-Proto (see getScheme() and isSecure())
-     *  * Request::HEADER_FORWARDED:    defaults to Forwarded         (see RFC 7239)
      *
      * Setting an empty value allows to disable the trusted header for the given key.
      *
@@ -1388,10 +1387,10 @@ class Request
     public function getRequestFormat($default = 'html')
     {
         if (null === $this->format) {
-            $this->format = $this->get('_format');
+            $this->format = $this->get('_format', $default);
         }
 
-        return null === $this->format ? $default : $this->format;
+        return $this->format;
     }
 
     /**
@@ -1473,27 +1472,11 @@ class Request
     /**
      * Checks whether the method is safe or not.
      *
-     * @see https://tools.ietf.org/html/rfc7231#section-4.2.1
-     *
-     * @param bool $andCacheable Adds the additional condition that the method should be cacheable. True by default.
-     *
      * @return bool
      */
-    public function isMethodSafe(/* $andCacheable = true */)
+    public function isMethodSafe()
     {
-        return in_array($this->getMethod(), 0 < func_num_args() && !func_get_arg(0) ? array('GET', 'HEAD', 'OPTIONS', 'TRACE') : array('GET', 'HEAD'));
-    }
-
-    /**
-     * Checks whether the method is cacheable or not.
-     *
-     * @see https://tools.ietf.org/html/rfc7231#section-4.2.3
-     *
-     * @return bool
-     */
-    public function isMethodCacheable()
-    {
-        return in_array($this->getMethod(), array('GET', 'HEAD'));
+        return in_array($this->getMethod(), array('GET', 'HEAD', 'OPTIONS', 'TRACE'));
     }
 
     /**
@@ -1687,7 +1670,7 @@ class Request
      * It works if your JavaScript library sets an X-Requested-With HTTP header.
      * It is known to work with common JavaScript frameworks:
      *
-     * @see http://en.wikipedia.org/wiki/List_of_Ajax_frameworks#JavaScript
+     * @link http://en.wikipedia.org/wiki/List_of_Ajax_frameworks#JavaScript
      *
      * @return bool true if the request is an XMLHttpRequest, false otherwise
      */

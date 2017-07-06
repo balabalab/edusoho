@@ -255,7 +255,8 @@ class TextDescriptor extends Descriptor
         $tableRows[] = array('Service ID', isset($options['id']) ? $options['id'] : '-');
         $tableRows[] = array('Class', $definition->getClass() ?: '-');
 
-        if ($tags = $definition->getTags()) {
+        $tags = $definition->getTags();
+        if (count($tags)) {
             $tagInformation = '';
             foreach ($tags as $tagName => $tagData) {
                 foreach ($tagData as $tagParameters) {
@@ -280,12 +281,24 @@ class TextDescriptor extends Descriptor
         $tableRows[] = array('Public', $definition->isPublic() ? 'yes' : 'no');
         $tableRows[] = array('Synthetic', $definition->isSynthetic() ? 'yes' : 'no');
         $tableRows[] = array('Lazy', $definition->isLazy() ? 'yes' : 'no');
-        $tableRows[] = array('Synchronized', $definition->isSynchronized(false) ? 'yes' : 'no');
-        $tableRows[] = array('Abstract', $definition->isAbstract() ? 'yes' : 'no');
-        $tableRows[] = array('Autowired', $definition->isAutowired() ? 'yes' : 'no');
 
-        $autowiringTypes = $definition->getAutowiringTypes();
-        $tableRows[] = array('Autowiring Types', $autowiringTypes ? implode(', ', $autowiringTypes) : '-');
+        if (method_exists($definition, 'isSynchronized')) {
+            $tableRows[] = array('Synchronized', $definition->isSynchronized(false) ? 'yes' : 'no');
+        }
+        $tableRows[] = array('Abstract', $definition->isAbstract() ? 'yes' : 'no');
+
+        if (method_exists($definition, 'isAutowired')) {
+            $tableRows[] = array('Autowired', $definition->isAutowired() ? 'yes' : 'no');
+
+            $autowiringTypes = $definition->getAutowiringTypes();
+            if (count($autowiringTypes)) {
+                $autowiringTypesInformation = implode(', ', $autowiringTypes);
+            } else {
+                $autowiringTypesInformation = '-';
+            }
+
+            $tableRows[] = array('Autowiring Types', $autowiringTypesInformation);
+        }
 
         if ($definition->getFile()) {
             $tableRows[] = array('Required File', $definition->getFile() ? $definition->getFile() : '-');

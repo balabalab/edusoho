@@ -129,12 +129,12 @@ class ExceptionController
         $template = (string) $template;
 
         $loader = $this->twig->getLoader();
-        if ($loader instanceof \Twig_ExistsLoaderInterface || method_exists($loader, 'exists')) {
+        if ($loader instanceof \Twig_ExistsLoaderInterface) {
             return $loader->exists($template);
         }
 
         try {
-            $loader->getSourceContext($template)->getCode();
+            $loader->getSource($template);
 
             return true;
         } catch (\Twig_Error_Loader $e) {

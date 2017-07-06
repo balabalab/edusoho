@@ -24,11 +24,7 @@ class DeprecationErrorHandler
             return true;
         }
 
-        if (class_exists('PHPUnit_Util_ErrorHandler')) {
-            return \PHPUnit_Util_ErrorHandler::handleError($errorNumber, $message, $file, $line);
-        }
-
-        return \PHPUnit\Util\ErrorHandler::handleError($errorNumber, $message, $file, $line);
+        return \PHPUnit_Util_ErrorHandler::handleError($errorNumber, $message, $file, $line);
     }
 
     public static function handleBC($errorNumber, $message, $file, $line, $context)

@@ -49,12 +49,7 @@ define(function(require, exports, module) {
         [
             'phone', 
             /^1\d{10}$/,
-            Translator.trans('请输入有效的%display%（仅支持中国大陆手机号）。', {display: '{{display}}'})
-        ],
-        [
-            'mobile',
-            /^1\d{10}$/,
-            Translator.trans('请输入有效的%display%（仅支持中国大陆手机号）。', {display: '{{display}}'})
+            Translator.trans('请输入有效的%display%', {display: '{{display}}'})
         ],
         [
             'chinese_alphanumeric',
@@ -223,14 +218,7 @@ define(function(require, exports, module) {
                 var element = options.element,
                     url = options.url ? options.url : (element.data('url') ? element.data('url') : null);
                 $.get(url, {value:element.val()}, function(response) {
-                    if(typeof(response) == 'object') {
-                        commit(response.success, response.message);
-                    } else if (response === true) {
-                        commit(response);
-                    } else {
-                        commit(false, response);
-                    }
-
+                    commit(response.success, response.message);
                 }, 'json');
             }
         ],
@@ -241,13 +229,7 @@ define(function(require, exports, module) {
                     url = options.url ? options.url : (element.data('url') ? element.data('url') : null);
                     value = element.val().replace(/\./g, "!");
                 $.get(url, {value:value}, function(response) {
-                    if(typeof(response) == 'object') {
-                        commit(response.success, response.message);
-                    } else if (response === true) {
-                        commit(response);
-                    } else {
-                        commit(false, response);
-                    }
+                    commit(response.success, response.message);
                 }, 'json');
             }
         ],
@@ -258,13 +240,7 @@ define(function(require, exports, module) {
                     url = options.url ? options.url : (element.data('url') ? element.data('url') : null);
                     value = element.val().replace(/\./g, "!");
                 $.get(url, {value:value}, function(response) {
-                    if(typeof(response) == 'object') {
-                        commit(response.success, response.message);
-                    } else if (response === true) {
-                        commit(response);
-                    } else {
-                        commit(false, response);
-                    }
+                    commit(response.success, response.message);
                 }, 'json');
             }
         ],
@@ -275,13 +251,7 @@ define(function(require, exports, module) {
                     url = options.url ? options.url : (element.data('url') ? element.data('url') : null);
                     value = element.val().replace(/\./g, "!");
                 $.get(url, {value:value, randomName:element.data('randmo')}, function(response) {
-                    if(typeof(response) == 'object') {
-                        commit(response.success, response.message);
-                    } else if (response === true) {
-                        commit(response);
-                    } else {
-                        commit(false, response);
-                    }
+                    commit(response.success, response.message);
                 }, 'json');
             }
         ],
@@ -292,13 +262,7 @@ define(function(require, exports, module) {
                     url = options.url ? options.url : (element.data('url') ? element.data('url') : null);
                     value = element.val().replace(/\./g, "!");
                 $.get(url, {value:value}, function(response) {
-                    if(typeof(response) == 'object') {
-                        commit(response.success, response.message);
-                    } else if (response === true) {
-                        commit(response);
-                    } else {
-                        commit(false, response);
-                    }
+                    commit(response.success, response.message);
                 }, 'json');
             }
         ],
@@ -396,6 +360,11 @@ define(function(require, exports, module) {
                 return  result;  
              },
             Translator.trans('%display%格式错误', {display: '{{display}}'})
+        ],
+        [
+            'mobile',
+            /^1\d{10}$/,
+            Translator.trans('请输入正确的%display%', {display:'{{display}}'})
         ],
         [
             'email',

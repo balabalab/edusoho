@@ -5,8 +5,6 @@ namespace Topxia\Api\Resource;
 
 use Topxia\Api\Util\TagUtil;
 
-use Topxia\Service\Common\ServiceKernel;
-
 class OpenCourse extends BaseResource
 {
     public function filter($res)
@@ -31,6 +29,6 @@ class OpenCourse extends BaseResource
 
     protected function getSettingService()
     {
-        return ServiceKernel::instance()->createService('System:SettingService');
+        return $this->getServiceKernel()->createService('System.SettingService');
     }
 }

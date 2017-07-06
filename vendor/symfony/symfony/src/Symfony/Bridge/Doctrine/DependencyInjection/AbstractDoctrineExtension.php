@@ -134,7 +134,10 @@ abstract class AbstractDoctrineExtension extends Extension
             throw new \InvalidArgumentException(sprintf('Invalid Doctrine mapping path given. Cannot load Doctrine mapping/bundle named "%s".', $mappingName));
         }
 
-        $this->drivers[$mappingConfig['type']][$mappingConfig['prefix']] = realpath($mappingDirectory) ?: $mappingDirectory;
+        if (substr($mappingDirectory, 0, 7) !== 'phar://') {
+            $mappingDirectory = realpath($mappingDirectory);
+        }
+        $this->drivers[$mappingConfig['type']][$mappingConfig['prefix']] = $mappingDirectory;
     }
 
     /**

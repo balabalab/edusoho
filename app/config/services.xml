@@ -6,9 +6,7 @@
         </parameter>
     </parameters>
     <services>
-        <service id="doctrine.orm.entity_manager" class="Doctrine\ORM\EntityManager">
-            <factory class="Doctrine\ORM\EntityManager" method="create">
-            </factory>
+        <service id="doctrine.orm.entity_manager" class="Doctrine\ORM\EntityManager" factory-class="Doctrine\ORM\EntityManager" factory-method="create">
             <argument type="collection">
                 <argument key="driver">%database_driver%</argument>
                 <argument key="user">%database_user%</argument>
@@ -19,9 +17,7 @@
             </argument>
             <argument type="service" id="doctrine.entity_manager.config" />
         </service>
-        <service id="doctrine.entity_manager.config" class="Doctrine\ORM\Tools\Setup">
-            <factory class="Doctrine\ORM\Tools\Setup" method="createConfiguration">
-            </factory>
+        <service id="doctrine.entity_manager.config" class="Doctrine\ORM\Tools\Setup" factory-class="Doctrine\ORM\Tools\Setup" factory-method="createConfiguration">
             <argument>true</argument>
             <call method="setMetadataDriverImpl">
                 <argument type="service" id="doctrine.entity_manager.driver.yaml" />

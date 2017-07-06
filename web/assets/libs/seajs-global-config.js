@@ -1,4 +1,3 @@
-var __URL_PROTOCOL = 'https:' == document.location.protocol ? 'https': 'http';
 
 seajs.config({
     alias: {
@@ -78,8 +77,8 @@ seajs.config({
         'jquery.lavalamp': 'jquery-plugin/jquery.lavalamp/jquery.lavalamp',
         'video-player': 'balloon-video-player/1.3.0/index',
         'edusoho.tree': 'edusoho/tree/1.0.0/tree.js',
-        'video-player-new': __URL_PROTOCOL + ':' + (app.cloudSdkCdn ? app.cloudSdkCdn : '//service-cdn.qiqiuyun.net') + '/js-sdk/video-player/sdk-v1.js',
-        'new-uploader':  __URL_PROTOCOL + ':' + (app.cloudSdkCdn ? app.cloudSdkCdn : '//service-cdn.qiqiuyun.net') + '/js-sdk/uploader/sdk-v1.js',
+        'video-player-new': (app.cloudSdkCdn ? app.cloudSdkCdn : '//service-cdn.qiqiuyun.net') + '/js-sdk/video-player/sdk-v1.js',
+        'new-uploader': (app.cloudSdkCdn ? app.cloudSdkCdn : '//service-cdn.qiqiuyun.net') + '/js-sdk/uploader/sdk-v1.js',
         'subtitle-browser': 'subtitle/1.0.0/subtitle.browser.min.js',
         'echarts': 'gallery2/echarts/3.1.10/echarts',
         'echarts-debug':'gallery2/echarts/3.1.10/echarts-debug',
@@ -89,14 +88,12 @@ seajs.config({
         'org_z_tree_css': 'jquery-plugin/zTree/3.5.21/css/org.css',
         'jquery.treegrid': 'jquery-plugin/treegrid/0.3.0/jquery.treegrid',
         'jquery.treegrid.css': 'jquery-plugin/treegrid/0.3.0/jquery.treegrid.css',
-        'jweixin':'edusoho/wxrs/1.2.0/jweixin.js',
+        'jweixin':'edusoho/wxrs/1.0.0/jweixin.js',
         'g2':'g2/1.2.4/index.js'
     },
 
     // 预加载项
     preload: [this.JSON ? '' : 'json'],
-
-    base: '/assets/libs',
 
     // 路径配置
     paths: app.jsPaths,
@@ -145,14 +142,5 @@ seajs.on('fetch', function(data) {
 seajs.on('define', function(data) {
     if (data.uri.lastIndexOf(__SEAJS_FILE_VERSION) > 0) {
         data.uri = data.uri.replace(__SEAJS_FILE_VERSION, '');
-    }
-});
-
-seajs.on('require', function(data) {
-    if ((data.id == '$' || data.id == 'jquery' || data.id == '$-debug') && (typeof window.jQuery !== 'undefined' || typeof window.$ !== 'undefined'))
-    {
-        data.exec = function () {
-            return window.$;
-        }
     }
 });

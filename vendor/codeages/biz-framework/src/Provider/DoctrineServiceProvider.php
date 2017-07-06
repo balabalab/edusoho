@@ -22,10 +22,6 @@ use Symfony\Bridge\Doctrine\Logger\DbalLogger;
  */
 class DoctrineServiceProvider implements ServiceProviderInterface
 {
-    /**
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
     public function register(Container $app)
     {
         $app['db.default_options'] = array(
@@ -75,7 +71,7 @@ class DoctrineServiceProvider implements ServiceProviderInterface
                     $manager = $app['dbs.event_manager'][$name];
                 }
 
-                $dbs[$name] = function () use ($options, $config, $manager) {
+                $dbs[$name] = function ($dbs) use ($options, $config, $manager) {
                     return DriverManager::getConnection($options, $config, $manager);
                 };
             }
@@ -109,11 +105,7 @@ class DoctrineServiceProvider implements ServiceProviderInterface
             return $managers;
         };
 
-        $this->registerShortcutForFirstDb($app);
-    }
-
-    private function registerShortcutForFirstDb($app)
-    {
+        // shortcuts for the "first" DB
         $app['db'] = function ($app) {
             $dbs = $app['dbs'];
 

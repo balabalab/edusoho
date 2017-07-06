@@ -3,13 +3,9 @@
 namespace Codeages\Biz\Framework\Context;
 
 use Codeages\Biz\Framework\Dao\DaoProxy;
-use Codeages\Biz\Framework\Dao\FieldSerializer;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Codeages\Biz\Framework\Dao\CacheStrategy;
-use Codeages\Biz\Framework\Dao\CacheStrategy\SharedStorage;
 
 class Biz extends Container
 {
@@ -26,25 +22,6 @@ class Biz extends Container
 
         $this['autoload.aliases'] = new \ArrayObject(array('' => 'Biz'));
 
-        $this['dispatcher'] = function () {
-            return new EventDispatcher();
-        };
-
-        $this['callback_resolver'] = function ($biz) {
-            return new CallbackResolver($biz);
-        };
-
-        $this['autoloader'] = function ($biz) {
-            return new ContainerAutoloader(
-                $biz,
-                $biz['autoload.aliases'],
-                array(
-                    'service' => $biz['autoload.object_maker.service'],
-                    'dao' => $biz['autoload.object_maker.dao'],
-                )
-            );
-        };
-
         $this['autoload.object_maker.service'] = function ($biz) {
             return function ($namespace, $name) use ($biz) {
                 $class = "{$namespace}\\Service\\Impl\\{$name}Impl";
@@ -57,39 +34,27 @@ class Biz extends Container
             return function ($namespace, $name) use ($biz) {
                 $class = "{$namespace}\\Dao\\Impl\\{$name}Impl";
 
-                return new DaoProxy($biz, new $class($biz), $biz['dao.serializer']);
+                return new DaoProxy($biz, new $class($biz));
             };
         };
 
-        $this['dao.serializer'] = function () {
-            return new FieldSerializer();
+        $this['autoloader'] = function ($biz) {
+            return new ContainerAutoloader($biz, $biz['autoload.aliases'], array(
+                'service' => $biz['autoload.object_maker.service'],
+                'dao' => $biz['autoload.object_maker.dao'],
+            ));
         };
 
-        $this['dao.cache.first.enabled'] = true;
-        $this['dao.cache.second.enabled'] = false;
-
-        $this['dao.cache.chain'] = $this->factory(function ($biz) {
-            return new CacheStrategy\DoubleCacheStrategy();
-        });
-
-        $this['dao.cache.first'] = function () {
-            return new CacheStrategy\MemoryCacheStrategy();
+        $this['dispatcher'] = function ($biz) {
+            return new EventDispatcher();
         };
 
-        $this['dao.cache.second.strategy.default'] = function ($biz) {
-            return $biz['dao.cache.second.strategy.table'];
-        };
-
-        $this['dao.cache.second.strategy.table'] = function ($biz) {
-            return new CacheStrategy\TableCacheStrategy($biz['redis'], $biz['dao.cache.shared_storage']);
-        };
-
-        $this['dao.cache.shared_storage'] = function ($biz) {
-            return new SharedStorage();
+        $this['callback_resolver'] = function ($biz) {
+            return new CallbackResolver($biz);
         };
 
         foreach ($values as $key => $value) {
-            $this->offsetSet($key, $value);
+            $this[$key] = $value;
         }
     }
 
@@ -101,7 +66,7 @@ class Biz extends Container
         return $this;
     }
 
-    public function boot()
+    public function boot($options = array())
     {
         if (true === $this->booted) {
             return;

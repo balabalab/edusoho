@@ -2,7 +2,7 @@
 
 namespace Topxia\WebBundle;
 
-use AppBundle\Common\ExtensionalBundle;
+use Topxia\Common\ExtensionalBundle;
 
 class TopxiaWebBundle extends ExtensionalBundle
 {
@@ -10,4 +10,5 @@ class TopxiaWebBundle extends ExtensionalBundle
     {
         return array('DataTag', 'StatusTemplate', 'DataDict', 'NotificationTemplate');
     }
+
 }

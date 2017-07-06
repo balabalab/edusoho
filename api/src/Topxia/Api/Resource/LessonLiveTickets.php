@@ -3,21 +3,20 @@
 namespace Topxia\Api\Resource;
 
 use Silex\Application;
-use Biz\CloudPlatform\CloudAPIFactory;
 use Symfony\Component\HttpFoundation\Request;
+use Topxia\Service\CloudPlatform\CloudAPIFactory;
 
 class LessonLiveTickets extends BaseResource
 {
     public function post(Application $app, Request $request, $id)
     {
-        $task = $this->getTaskService()->getTask($id);
-        $activity = $this->getActivityService()->getActivity($task['activityId'], true);
-        if ($task['type'] != 'live') {
+        $lesson = $this->getCourseService()->getLesson($id);
+        if ($lesson['type'] != 'live') {
             return $this->error('5001', '非直播课程');
         }
 
         try {
-            list($course, $member) = $this->getCourseService()->tryTakeCourse($task['courseId']);
+            list($course, $member) = $this->getCourseService()->tryTakeCourse($lesson['courseId']);
         } catch (\Exception $e) {
             return $this->error('5002', '您无权限观看此直播课时!');
         }
@@ -37,7 +36,7 @@ class LessonLiveTickets extends BaseResource
         }
 
         try {
-            $ticket = CloudAPIFactory::create('leaf')->post("/liverooms/{$activity['ext']['liveId']}/tickets", $params);
+            $ticket = CloudAPIFactory::create('leaf')->post("/liverooms/{$lesson['mediaId']}/tickets", $params);
         } catch (\Exception $e) {
             return $this->error('5003', '进入直播教室失败！');
         }
@@ -58,17 +57,7 @@ class LessonLiveTickets extends BaseResource
 
     protected function getCourseService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseService');
-    }
-
-    protected function getTaskService()
-    {
-        return $this->getServiceKernel()->createService('Task:TaskService');
-    }
-
-    protected function getActivityService()
-    {
-        return $this->getServiceKernel()->createService('Activity:ActivityService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 
     public function filter($res)

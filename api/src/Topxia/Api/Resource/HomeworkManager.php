@@ -4,8 +4,7 @@ namespace Topxia\Api\Resource;
 
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
-use AppBundle\Common\ArrayToolkit;
-use Topxia\Service\Common\ServiceKernel;
+use Topxia\Common\ArrayToolkit;
 
 class HomeworkManager extends BaseResource
 {
@@ -46,7 +45,7 @@ class HomeworkManager extends BaseResource
             return $this->error('500', '用户不存在或者尚未登录，请先登录');
         }
 
-        if (!$this->getCourseMemberService()->isCourseTeacher($courseId, $currentUser['id'])) {
+        if (!$this->getCourseService()->isCourseTeacher($courseId, $currentUser['id'])) {
             return $this->error('error', '您不是老师，不能查看此页面！');
         }
 
@@ -59,11 +58,11 @@ class HomeworkManager extends BaseResource
         $homeworksResultsCounts = $this->getHomeworkService()->findResultsCountsByCourseIdsAndStatus($courseIds, $status);
 
         if ($status == 'reviewing') {
-            $orderBy = array('usedTime'=> 'DESC');
+            $orderBy = array('usedTime', 'DESC');
         }
 
         if ($status == 'finished') {
-            $orderBy = array('checkedTime'=> 'DESC');
+            $orderBy = array('checkedTime', 'DESC');
         }
 
         $homeworksResults = $this->getHomeworkService()->findResultsByCourseIdsAndStatus($courseIds, $status, $orderBy, 0, $start);
@@ -110,16 +109,11 @@ class HomeworkManager extends BaseResource
 
     protected function getCourseService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseService');
-    }
-
-    protected function getCourseMemberService()
-    {
-        return $this->getServiceKernel()->createService('Course:MemberService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 
     protected function getUserService()
     {
-        return ServiceKernel::instance()->createService('User:UserService');
+        return $this->getServiceKernel()->createService('User.UserService');
     }
 }

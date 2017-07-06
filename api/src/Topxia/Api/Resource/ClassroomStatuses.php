@@ -2,11 +2,9 @@
 
 namespace Topxia\Api\Resource;
 
-use Biz\User\Service\StatusService;
 use Silex\Application;
-use AppBundle\Common\ArrayToolkit;
+use Topxia\Common\ArrayToolkit;
 use Symfony\Component\HttpFoundation\Request;
-use Topxia\Service\Common\ServiceKernel;
 
 class ClassroomStatuses extends BaseResource
 {
@@ -47,26 +45,23 @@ class ClassroomStatuses extends BaseResource
         return $this->multicallFilter('ClassroomStatus', $res);
     }
 
-    /**
-     * @return StatusService
-     */
     protected function getStatusService()
     {
-        return ServiceKernel::instance()->createService('User:StatusService');
+        return $this->getServiceKernel()->createService('User.StatusService');
     }
 
     protected function getClassroomService()
     {
-        return $this->getServiceKernel()->createService('Classroom:ClassroomService');
+        return $this->getServiceKernel()->createService('Classroom:Classroom.ClassroomService');
     }
 
     protected function getUserService()
     {
-        return ServiceKernel::instance()->createService('User:UserService');
+        return $this->getServiceKernel()->createService('User.UserService');
     }
 
     protected function getCourseService()
     {
-        return $this->getServiceKernel()->createService('Course:CourseService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 }

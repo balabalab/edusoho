@@ -4,7 +4,7 @@ namespace Topxia\Api\Resource;
 
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
-use Biz\CloudPlatform\CloudAPIFactory;
+use Topxia\Service\CloudPlatform\CloudAPIFactory;
 
 class LessonLiveTicket extends BaseResource
 {

@@ -2,7 +2,9 @@
 
 use Topxia\Service\Common\ServiceKernel;
 use Symfony\Component\HttpFoundation\Request;
-use Biz\Util\EdusohoTuiClient;
+use Topxia\Common\ArrayToolkit;
+use Silex\Application;
+use Topxia\Service\Util\EdusohoTuiClient;
 
 $api = $app['controllers_factory'];
 
@@ -20,10 +22,9 @@ $api = $app['controllers_factory'];
 */
 
 $api->get('/about', function () {
-    $mobile = ServiceKernel::instance()->createService('System:SettingService')->get('mobile', array());
-
+    $mobile = ServiceKernel::instance()->createService('System.SettingService')->get('mobile', array());
     return array(
-        'about' => isset($mobile['about']) ? $mobile['about'] : '',
+        'about' => isset($mobile['about']) ? $mobile['about'] : ''
     );
 });
 
@@ -46,9 +47,9 @@ $api->get('/token', function () {
     if (isset($token['error'])) {
         throw new Exception($token['error']);
     }
-
     return $token;
 });
+
 
 /*
 ## 获取手机网校公告列表
@@ -69,17 +70,17 @@ $api->get('/token', function () {
 $api->get('/announcements', function (Request $request) {
     $start = $request->query->get('start', 0);
     $limit = $request->query->get('limit', 10);
-    $count = ServiceKernel::instance()->createService('Announcement:AnnouncementService')->countAnnouncements(array('targetType' => 'global'));
-    $announcements = ServiceKernel::instance()->createService('Announcement:AnnouncementService')->searchAnnouncements(
+    $count = ServiceKernel::instance()->createService('Announcement.AnnouncementService')->searchAnnouncementsCount(array('targetType' => 'global'));
+    $announcements = ServiceKernel::instance()->createService('Announcement.AnnouncementService')->searchAnnouncements(
         array('targetType' => 'global'),
-        array('createdTime' => 'DESC'),
+        array('createdTime','DESC'),
         $start,
         $limit
     );
-
+    
     return array(
-        'data' => filters($announcements, 'announcement'),
-        'total' => $count,
+        'data' => filters($announcements,'announcement'),
+        'total' => $count
     );
 });
 

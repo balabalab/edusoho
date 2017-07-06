@@ -3,7 +3,7 @@
 use Topxia\Service\Common\ServiceKernel;
 use Symfony\Component\HttpFoundation\Request;
 use Silex\Application;
-use AppBundle\Util\UploadToken;
+use Topxia\WebBundle\Util\UploadToken;
 
 $api = $app['controllers_factory'];
 

@@ -2,339 +2,145 @@
 
 namespace Codeages\Biz\Framework\Dao;
 
-use Pimple\Container;
-
 class DaoProxy
 {
-    /**
-     * @var DaoInterface
-     */
+    protected $container;
+
     protected $dao;
 
-    /**
-     * @var SerializerInterface
-     */
-    protected $serializer;
-
-    /**
-     * @var CacheStrategy
-     */
-    protected $cacheStrategy;
-
-    public function __construct($container, DaoInterface $dao, SerializerInterface $serializer)
+    public function __construct($container, $dao)
     {
         $this->container = $container;
         $this->dao = $dao;
-        $this->serializer = $serializer;
-        $this->cacheStrategy = false;
     }
 
     public function __call($method, $arguments)
     {
-        $proxyMethod = $this->getProxyMethod($method);
-        if ($proxyMethod) {
-            return $this->$proxyMethod($method, $arguments);
-        } else {
-            return $this->callRealDao($method, $arguments);
-        }
-    }
+        if (strpos($method, 'get') === 0) {
+            $row = $this->_callRealDao($method, $arguments);
 
-    protected function getProxyMethod($method)
-    {
-        foreach (array('get', 'find', 'search', 'count', 'create', 'batchCreate', 'update', 'wave', 'delete') as $prefix) {
-            if (strpos($method, $prefix) === 0) {
-                return $prefix;
-            }
+            return $this->_unserialize($row);
         }
 
-        return null;
-    }
+        if ((strpos($method, 'find') === 0) or (strpos($method, 'search') === 0)) {
+            $rows = $this->_callRealDao($method, $arguments);
 
-    protected function get($method, $arguments)
-    {
-        $lastArgument = end($arguments);
-        reset($arguments);
-
-        if (is_array($lastArgument) && isset($lastArgument['lock']) && $lastArgument['lock'] === true) {
-            $row = $this->callRealDao($method, $arguments);
-            $this->unserialize($row);
-
-            return $row;
+            return $this->_unserializes($rows);
         }
 
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $cache = $strategy->beforeGet($this->dao, $method, $arguments);
-            if ($cache !== false) {
-                return $cache;
-            }
-        }
-
-        $row = $this->callRealDao($method, $arguments);
-        $this->unserialize($row);
-
-        if ($strategy) {
-            $strategy->afterGet($this->dao, $method, $arguments, $row);
-        }
-
-        return $row;
-    }
-
-    protected function find($method, $arguments)
-    {
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $cache = $strategy->beforeFind($this->dao, $method, $arguments);
-            if ($cache !== false) {
-                return $cache;
-            }
-        }
-
-        $rows = $this->callRealDao($method, $arguments);
-        $this->unserializes($rows);
-
-        if ($strategy) {
-            $strategy->afterFind($this->dao, $method, $arguments, $rows);
-        }
-
-        return $rows;
-    }
-
-    protected function search($method, $arguments)
-    {
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $cache = $strategy->beforeSearch($this->dao, $method, $arguments);
-            if ($cache !== false) {
-                return $cache;
-            }
-        }
-
-        $rows = $this->callRealDao($method, $arguments);
-        $this->unserializes($rows);
-
-        if ($strategy) {
-            $strategy->afterSearch($this->dao, $method, $arguments, $rows);
-        }
-
-        return $rows;
-    }
-
-    protected function count($method, $arguments)
-    {
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $cache = $strategy->beforeCount($this->dao, $method, $arguments);
-            if ($cache !== false) {
-                return $cache;
-            }
-        }
-
-        $count = $this->callRealDao($method, $arguments);
-
-        if ($strategy) {
-            $strategy->afterCount($this->dao, $method, $arguments, $count);
-        }
-
-        return $count;
-    }
-
-    protected function create($method, $arguments)
-    {
         $declares = $this->dao->declares();
-
-        $time = time();
-
-        if (isset($declares['timestamps'][0])) {
-            $arguments[0][$declares['timestamps'][0]] = $time;
-        }
-
-        if (isset($declares['timestamps'][1])) {
-            $arguments[0][$declares['timestamps'][1]] = $time;
-        }
-
-        $this->serialize($arguments[0]);
-        $row = $this->callRealDao($method, $arguments);
-        $this->unserialize($row);
-
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $this->buildCacheStrategy()->afterCreate($this->dao, $method, $arguments, $row);
-        }
-
-        return $row;
-    }
-
-    protected function batchCreate($method, $arguments)
-    {
-        $declares = $this->dao->declares();
-
-        end($arguments);
-        $lastKey = key($arguments);
-        reset($arguments);
-
-        if (!is_array($arguments[$lastKey])) {
-            throw new DaoException('batchCreate method arguments last element must be array type');
-        }
-
-        $time = time();
-        $rows = $arguments[$lastKey];
-
-        foreach ($rows as &$row) {
+        if (strpos($method, 'create') === 0) {
             if (isset($declares['timestamps'][0])) {
-                $row[$declares['timestamps'][0]] = $time;
+                $arguments[0][$declares['timestamps'][0]] = time();
             }
 
             if (isset($declares['timestamps'][1])) {
-                $row[$declares['timestamps'][1]] = $time;
+                $arguments[0][$declares['timestamps'][1]] = time();
             }
 
-            $this->serialize($row);
-            unset($row);
+            $arguments[0] = $this->_serialize($arguments[0]);
+            $row = $this->_callRealDao($method, $arguments);
+
+            return $this->_unserialize($row);
         }
 
-        $arguments[$lastKey] = $rows;
+        if (strpos($method, 'update') === 0) {
+            if (isset($declares['timestamps'][1])) {
+                $arguments[1][$declares['timestamps'][1]] = time();
+            }
+            $arguments[1] = $this->_serialize($arguments[1]);
 
-        return $this->callRealDao($method, $arguments);
+            $row = $this->_callRealDao($method, $arguments);
+
+            return $this->_unserialize($row);
+        }
+
+        return $this->_callRealDao($method, $arguments);
     }
 
-    protected function wave($method, $arguments)
-    {
-        $result = $this->callRealDao($method, $arguments);
-
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $this->buildCacheStrategy()->afterWave($this->dao, $method, $arguments, $result);
-        }
-
-        return $result;
-    }
-
-    protected function update($method, $arguments)
-    {
-        $declares = $this->dao->declares();
-
-        end($arguments);
-        $lastKey = key($arguments);
-        reset($arguments);
-
-        if (!is_array($arguments[$lastKey])) {
-            throw new DaoException('update method arguments last element must be array type');
-        }
-
-        if (isset($declares['timestamps'][1])) {
-            $arguments[$lastKey][$declares['timestamps'][1]] = time();
-        }
-
-        $this->serialize($arguments[$lastKey]);
-
-        $row = $this->callRealDao($method, $arguments);
-
-        if (is_array($row)) {
-            $this->unserialize($row);
-        }
-
-        if (!is_array($row) && !is_numeric($row) && !is_null($row)) {
-            throw new DaoException('update method return value must be array type or int type');
-        }
-
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $this->buildCacheStrategy()->afterUpdate($this->dao, $method, $arguments, $row);
-        }
-
-        return $row;
-    }
-
-    protected function delete($method, $arguments)
-    {
-        $result = $this->callRealDao($method, $arguments);
-
-        $strategy = $this->buildCacheStrategy();
-        if ($strategy) {
-            $this->buildCacheStrategy()->afterDelete($this->dao, $method, $arguments);
-        }
-
-        return $result;
-    }
-
-    protected function callRealDao($method, $arguments)
+    private function _callRealDao($method, $arguments)
     {
         return call_user_func_array(array($this->dao, $method), $arguments);
     }
 
-    protected function unserialize(&$row)
+    private function _unserialize(&$row)
     {
         if (empty($row)) {
-            return;
+            return $row;
         }
 
         $declares = $this->dao->declares();
         $serializes = empty($declares['serializes']) ? array() : $declares['serializes'];
 
         foreach ($serializes as $key => $method) {
-            if (!array_key_exists($key, $row)) {
+            if (!isset($row[$key])) {
                 continue;
             }
-
-            $row[$key] = $this->serializer->unserialize($method, $row[$key]);
+            $method = "_{$method}Unserialize";
+            $row[$key] = $this->$method($row[$key]);
         }
+
+        return $row;
     }
 
-    protected function unserializes(array &$rows)
+    private function _unserializes(array &$rows)
     {
         foreach ($rows as &$row) {
-            $this->unserialize($row);
+            $this->_unserialize($row);
         }
+
+        return $rows;
     }
 
-    protected function serialize(&$row)
+    private function _serialize(&$row)
     {
         $declares = $this->dao->declares();
         $serializes = empty($declares['serializes']) ? array() : $declares['serializes'];
 
         foreach ($serializes as $key => $method) {
-            if (!array_key_exists($key, $row)) {
+            if (!isset($row[$key])) {
                 continue;
             }
-
-            $row[$key] = $this->serializer->serialize($method, $row[$key]);
+            $method = "_{$method}Serialize";
+            $row[$key] = $this->$method($row[$key]);
         }
+
+        return $row;
     }
 
-    private function buildCacheStrategy()
+    private function _jsonSerialize($value)
     {
-        if ($this->cacheStrategy !== false) {
-            return $this->cacheStrategy;
+        if (empty($value)) {
+            return '';
         }
 
-        $firstEnabled = empty($this->container['dao.cache.first.enabled']) ? false : true;
-        $secondEnabled = empty($this->container['dao.cache.second.enabled']) ? false : true;
+        return json_encode($value);
+    }
 
-        if ($secondEnabled) {
-            $declares = $this->dao->declares();
-            if (isset($declares['cache']) && $declares['cache'] === false) {
-                $secondEnabled = false;
-            } else {
-                $secondStrategy = $this->container['dao.cache.second.strategy.'.(empty($declares['cache']) ? 'default' : $declares['cache'])];
-            }
+    private function _jsonUnserialize($value)
+    {
+        if (empty($value)) {
+            return array();
         }
 
-        if ($firstEnabled && $secondEnabled) {
-            $chain = $this->container['dao.cache.chain'];
-            $chain->setStrategies($this->container['dao.cache.first'], $secondStrategy);
+        return json_decode($value, true);
+    }
 
-            return $this->cacheStrategy = $chain;
+    private function _delimiterSerialize($value)
+    {
+        if (empty($value)) {
+            return '';
         }
 
-        if ($firstEnabled && !$secondEnabled) {
-            return  $this->cacheStrategy = $this->container['dao.cache.first'];
+        return '|'.implode('|', $value).'|';
+    }
+
+    private function _delimiterUnserialize($value)
+    {
+        if (empty($value)) {
+            return array();
         }
 
-        if (!$firstEnabled && $secondEnabled) {
-            return  $this->cacheStrategy = $secondStrategy;
-        }
-
-        return null;
+        return explode('|', trim($value, '|'));
     }
 }

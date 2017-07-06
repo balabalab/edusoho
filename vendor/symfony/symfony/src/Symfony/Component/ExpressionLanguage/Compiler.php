@@ -53,7 +53,7 @@ class Compiler
      *
      * @param Node\Node $node The node to compile
      *
-     * @return $this
+     * @return Compiler The current compiler instance
      */
     public function compile(Node\Node $node)
     {
@@ -80,7 +80,7 @@ class Compiler
      *
      * @param string $string The string
      *
-     * @return $this
+     * @return Compiler The current compiler instance
      */
     public function raw($string)
     {
@@ -94,7 +94,7 @@ class Compiler
      *
      * @param string $value The string
      *
-     * @return $this
+     * @return Compiler The current compiler instance
      */
     public function string($value)
     {
@@ -108,7 +108,7 @@ class Compiler
      *
      * @param mixed $value The value to convert
      *
-     * @return $this
+     * @return Compiler The current compiler instance
      */
     public function repr($value)
     {

@@ -24,10 +24,6 @@ class ScopeManager implements ScopeManagerInterface
      */
     public function createScope($scope, $description = null)
     {
-        if ($scopeObject = $this->findScopeByScope($scope)) {
-          return $scopeObject;
-        }
-
         $scopeObject = new \OAuth2\ServerBundle\Entity\Scope();
         $scopeObject->setScope($scope);
         $scopeObject->setDescription($description);
@@ -63,7 +59,7 @@ class ScopeManager implements ScopeManagerInterface
         $scopeObjects = $this->em->getRepository('OAuth2ServerBundle:Scope')
             ->createQueryBuilder('a')
             ->where('a.scope in (?1)')
-            ->setParameter(1, $scopes)
+            ->setParameter(1, implode(',', $scopes))
             ->getQuery()->getResult();
 
         return $scopeObjects;

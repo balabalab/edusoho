@@ -6,7 +6,6 @@
 namespace Phpmig\Api;
 
 use Phpmig\Migration;
-use RuntimeException;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -59,18 +58,6 @@ class PhpmigApplication
      */
     public function up($version = null)
     {
-        $adapter = ! empty($this->container['phpmig.adapter']) ? $this->container['phpmig.adapter'] : null;
-
-        if ($adapter == null) {
-
-            throw new RuntimeException("The container must contain a phpmig.adapter key!");
-        }
-
-        if (!$adapter->hasSchema()) {
-
-            $this->container['phpmig.adapter']->createSchema();
-        }
-
         foreach ($this->getMigrations($this->getVersion(), $version) as $migration) {
             $this->container['phpmig.migrator']->up($migration);
         }

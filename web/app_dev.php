@@ -10,22 +10,21 @@ use Symfony\Component\HttpFoundation\Request;
 // This check prevents access to debug front controllers that are deployed by accident to production servers.
 // Feel free to remove this, extend it, or make something more sophisticated.
 
-if (isset($_SERVER['HTTP_CLIENT_IP'])
+/*if (isset($_SERVER['HTTP_CLIENT_IP'])
     || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
     || !(in_array(@$_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1')) || php_sapi_name() === 'cli-server')
 ) {
     if (!file_exists(__DIR__.'/../app/data/dev.lock')) {
         header('HTTP/1.0 403 Forbidden');
-         exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
+        exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
     }
 }
-
-if (isOldApiCall()) {
+*/
+if ((strpos($_SERVER['REQUEST_URI'], '/api') === 0) || (strpos($_SERVER['REQUEST_URI'], '/app_dev.php/api') === 0)) {
     define('API_ENV', 'dev');
     include __DIR__.'/../api/index.php';
     exit();
 }
-
 
 fix_gpc_magic();
 
@@ -69,10 +68,4 @@ function _fix_gpc_magic_files(&$item, $key)
             $item = stripslashes($item);
         }
     }
-}
-
-function isOldApiCall()
-{
-    return (!(isset($_SERVER['HTTP_ACCEPT']) && $_SERVER['HTTP_ACCEPT'] == 'application/vnd.edusoho.v2+json'))
-    && ((strpos($_SERVER['REQUEST_URI'], '/api') === 0) || (strpos($_SERVER['REQUEST_URI'], '/app_dev.php/api') === 0));
 }

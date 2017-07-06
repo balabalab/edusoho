@@ -2,10 +2,10 @@
 
 namespace Topxia\Api\Resource;
 
+use Topxia\Api\Resource\BaseResource;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
-use AppBundle\Common\ArrayToolkit;
-use Topxia\Service\Common\ServiceKernel;
+use Topxia\Common\ArrayToolkit;
 
 class ClassroomMembers extends BaseResource
 {
@@ -18,10 +18,9 @@ class ClassroomMembers extends BaseResource
         if ($request->query->has('cursor')) {
             $cursor = $request->query->get('cursor', 0);
             $conditions['createdTime_GE'] = $cursor;
-            $members = $this->getClassroomService()->searchMembers($conditions, array('createdTime' => 'ASC'), $start, $limit);
+            $members = $this->getClassroomService()->searchMembers($conditions, array('createdTime', 'ASC'), $start, $limit);
             $members = $this->assemblyMembers($members);
             $next = $this->nextCursorPaging($cursor, $start, $limit, $members);
-
             return $this->wrap($this->filter($members), $next);
         } else {
             //@todo 暂不支持
@@ -52,11 +51,11 @@ class ClassroomMembers extends BaseResource
 
     protected function getUserService()
     {
-        return ServiceKernel::instance()->createService('User:UserService');
+        return $this->getServiceKernel()->createService('User.UserService');
     }
 
     protected function getClassroomService()
     {
-        return $this->getServiceKernel()->createService('Classroom:ClassroomService');
+        return $this->getServiceKernel()->createService('Classroom:Classroom.ClassroomService');
     }
 }

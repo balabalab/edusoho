@@ -3,13 +3,8 @@
 namespace Topxia\Api\Resource\IM;
 
 use Silex\Application;
-use AppBundle\Common\ArrayToolkit;
-use Biz\Course\Service\CourseService;
-use Biz\Course\Service\MemberService;
+use Topxia\Common\ArrayToolkit;
 use Topxia\Api\Resource\BaseResource;
-use Biz\System\Service\SettingService;
-use Biz\IM\Service\ConversationService;
-use Biz\Classroom\Service\ClassroomService;
 use Symfony\Component\HttpFoundation\Request;
 
 class MemberSync extends BaseResource
@@ -51,7 +46,6 @@ class MemberSync extends BaseResource
 
         try {
             $convMember = $this->getConversationService()->joinConversation($conv['no'], $user['id']);
-
             return array('convNo' => $convMember['convNo']);
         } catch (\Exception $e) {
             return $this->error($e->getCode(), $e->getMessage());
@@ -60,7 +54,7 @@ class MemberSync extends BaseResource
 
     protected function syncCourseConversations($user)
     {
-        $courseIds = $this->getCourseMemberService()->findMembersByUserIdAndJoinType($user['id']);
+        $courseIds = $this->getCourseService()->findMembersByUserIdAndJoinType($user['id']);
 
         $this->syncTargetConversations($user, $courseIds, 'course');
         $this->syncCourseConversationMembers($user, $courseIds);
@@ -85,10 +79,7 @@ class MemberSync extends BaseResource
 
         foreach ($convMembers as $convMember) {
             if (!in_array($convMember['targetId'], $courseIds)) {
-                $this->addDebug(
-                    'MemberSync',
-                    'syncCourseConversationMembers quitConversation : convNo='.$convMember['convNo'].',targetId='.$convMember['targetId']
-                );
+                $this->addDebug('MemberSync', 'syncCourseConversationMembers quitConversation : convNo='.$convMember['convNo'].',targetId='.$convMember['targetId']);
                 $this->getConversationService()->quitConversation($convMember['convNo'], $convMember['userId']);
             }
         }
@@ -104,10 +95,7 @@ class MemberSync extends BaseResource
 
         foreach ($convMembers as $convMember) {
             if (!in_array($convMember['targetId'], $classroomIds)) {
-                $this->addDebug(
-                    'MemberSync',
-                    'syncClassroomConversationMembers quitConversation : convNo='.$convMember['convNo'].',targetId='.$convMember['targetId']
-                );
+                $this->addDebug('MemberSync', 'syncClassroomConversationMembers quitConversation : convNo='.$convMember['convNo'].',targetId='.$convMember['targetId']);
                 $this->getConversationService()->quitConversation($convMember['convNo'], $convMember['userId']);
             }
         }
@@ -115,10 +103,7 @@ class MemberSync extends BaseResource
 
     protected function syncTargetConversations($user, $targetIds, $targetType)
     {
-        $userConvs = $this->getConversationService()->findMembersByUserIdAndTargetType(
-            $user['id'],
-            $targetType.'-push'
-        );
+        $userConvs = $this->getConversationService()->findMembersByUserIdAndTargetType($user['id'], $targetType.'-push');
 
         $userConvIds = ArrayToolkit::column($userConvs, 'targetId');
 
@@ -129,19 +114,14 @@ class MemberSync extends BaseResource
     protected function joinConversations($targetIds, $targetType, $user)
     {
         $params = array(
-            'targetIds' => $targetIds,
-            'targetTypes' => array($targetType.'-push'),
+            'targetIds'   => $targetIds,
+            'targetTypes' => array($targetType.'-push')
         );
-        $count = $this->getConversationService()->searchConversationCount($params);
-        $targetConvs = $this->getConversationService()->searchConversations(
-            $params,
-            array('createdTime' => 'DESC'),
-            0,
-            $count
-        );
+        $count       = $this->getConversationService()->searchConversationCount($params);
+        $targetConvs = $this->getConversationService()->searchConversations($params, array('createdTime', 'desc'), 0, $count);
 
         $targetConvsMap = ArrayToolkit::index($targetConvs, 'targetId');
-        $targetConvIds = ArrayToolkit::column($targetConvs, 'targetId');
+        $targetConvIds  = ArrayToolkit::column($targetConvs, 'targetId');
 
         $toCreate = array_diff($targetIds, $targetConvIds);
 
@@ -149,28 +129,16 @@ class MemberSync extends BaseResource
         foreach ($targetIds as $id) {
             if (in_array($id, $toCreate)) {
                 // 防止请求过于频繁造成服务器压力过大
-                $cnt += 1;
-                if ($cnt > self::MAX_CREATION_PER_TIME) {
+                if (++$cnt > MemberSync::MAX_CREATION_PER_TIME) {
                     break;
                 }
-                $this->addDebug(
-                    'MemberSync',
-                    'joinConversations & create : targetType='.$targetType.', targetId='.$id.', userId='.$user['id']
-                );
-                $this->getConversationService()->createConversation(
-                    '推送：'.$this->getTargetTitle($id, $targetType),
-                    $targetType.'-push',
-                    $id,
-                    array($user)
-                );
+                $this->addDebug('MemberSync', 'joinConversations & create : targetType='.$targetType.', targetId='.$id.', userId='.$user['id']);
+                $this->getConversationService()->createConversation('推送：'.$this->getTargetTitle($id, $targetType), $targetType.'-push', $id, array($user));
             } else {
                 if (!isset($targetConvsMap[$id])) {
                     continue;
                 }
-                $this->addDebug(
-                    'MemberSync',
-                    'joinConversations & join : targetType='.$targetType.',convNo='.$targetConvsMap[$id]['no'].',targetId='.$id
-                );
+                $this->addDebug('MemberSync', 'joinConversations & join : targetType='.$targetType.',convNo='.$targetConvsMap[$id]['no'].',targetId='.$id);
                 $this->getConversationService()->joinConversation($targetConvsMap[$id]['no'], $user['id']);
             }
         }
@@ -181,17 +149,10 @@ class MemberSync extends BaseResource
         $userConvsMap = ArrayToolkit::index($userConvs, 'targetId');
         foreach ($targetIds as $id) {
             try {
-                $this->addDebug(
-                    'MemberSync',
-                    'quitConversations : targetType='.$userConvsMap[$id]['targetType'].',convNo='.$userConvsMap[$id]['convNo'].',targetId='.$id
-                );
+                $this->addDebug('MemberSync', 'quitConversations : targetType='.$userConvsMap[$id]['targetType'].',convNo='.$userConvsMap[$id]['convNo'].',targetId='.$id);
                 $this->getConversationService()->quitConversation($userConvsMap[$id]['convNo'], $user['id']);
             } catch (\Exception $e) {
-                $this->addError(
-                    'MemberSync',
-                    'quitConversations : targetType='.$userConvsMap[$id]['targetType'].',convNo='.$userConvsMap[$id]['convNo'].',targetId='.$id.', error = '.$e->getMessage(
-                    )
-                );
+                $this->addError('MemberSync', 'quitConversations : targetType='.$userConvsMap[$id]['targetType'].',convNo='.$userConvsMap[$id]['convNo'].',targetId='.$id.', error = '.$e->getMessage());
             }
         }
     }
@@ -200,57 +161,29 @@ class MemberSync extends BaseResource
     {
         if ($targetType == 'course') {
             $course = $this->getCourseService()->getCourse($id);
-            $courseSet = $this->getCourseSetService()->getCourseSet($course['courseSetId']);
-
-            return $courseSet['title'].'-'.$course['title'];
+            return $course['title'];
         }
         $classroom = $this->getClassroomService()->getClassroom($id);
-
         return $classroom['title'];
     }
 
-    /**
-     * @return ConversationService
-     */
     protected function getConversationService()
     {
-        return $this->createService('IM:ConversationService');
+        return $this->getServiceKernel()->createService('IM.ConversationService');
     }
 
-    /**
-     * @return SettingService
-     */
-    protected function getSettingService()
+    private function getSettingService()
     {
-        return $this->createService('System:SettingService');
+        return $this->getServiceKernel()->createService('System.SettingService');
     }
 
-    /**
-     * @return ClassroomService
-     */
     protected function getClassroomService()
     {
-        return $this->createService('Classroom:ClassroomService');
+        return $this->getServiceKernel()->createService('Classroom:Classroom.ClassroomService');
     }
 
-    /**
-     * @return CourseService
-     */
     protected function getCourseService()
     {
-        return $this->createService('Course:CourseService');
-    }
-
-    protected function getCourseSetService()
-    {
-        return $this->createService('Course:CourseSetService');
-    }
-
-    /**
-     * @return MemberService
-     */
-    protected function getCourseMemberService()
-    {
-        return $this->createService('Course:MemberService');
+        return $this->getServiceKernel()->createService('Course.CourseService');
     }
 }

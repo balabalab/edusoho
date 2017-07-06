@@ -50,13 +50,7 @@ class ControllerListener implements EventSubscriberInterface
      */
     public function onKernelController(FilterControllerEvent $event)
     {
-        $controller = $event->getController();
-
-        if (!is_array($controller) && method_exists($controller, '__invoke')) {
-            $controller = array($controller, '__invoke');
-        }
-
-        if (!is_array($controller)) {
+        if (!is_array($controller = $event->getController())) {
             return;
         }
 

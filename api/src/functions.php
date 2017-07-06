@@ -1,6 +1,6 @@
 <?php
 use Topxia\Service\Common\ServiceKernel;
-use Biz\User\CurrentUser;
+use Topxia\Service\User\CurrentUser;
 use Codeages\Biz\Framework\Service\Exception\AccessDeniedException;
 use Codeages\Biz\Framework\Service\Exception\NotFoundException;
 
